@@ -3,7 +3,7 @@ package routes
 import actors.UserManagement.{GetPassword, Register}
 import akka.actor.ActorRef
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
-import akka.http.scaladsl.model.StatusCodes
+import akka.http.scaladsl.model.{HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.model.headers.{BasicHttpCredentials, HttpChallenges, RawHeader}
 import akka.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsMissing, CredentialsRejected}
 import akka.http.scaladsl.server.Directives._
@@ -67,9 +67,9 @@ object UserManagementRoute extends UserManagementJsonProtocol with SprayJsonSupp
           entity(as[UserCredentials]) { user =>
             val registrationFuture = (authenticator ? Register(user.username, user.password)).map {
               case Error(reason) =>
-                StatusCodes.Conflict
+                HttpResponse(StatusCodes.Conflict, entity = HttpEntity(reason.getMessage))
               case Success =>
-                StatusCodes.Created
+                HttpResponse(StatusCodes.Created)
             }
             complete(registrationFuture)
           }

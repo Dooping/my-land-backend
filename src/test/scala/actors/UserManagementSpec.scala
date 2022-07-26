@@ -11,7 +11,7 @@ import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import scala.language.postfixOps
 
 class UserManagementSpec
-  extends TestKit(ActorSystem("BasicSpec", PersistenceTestKitPlugin.config.withFallback(ConfigFactory.defaultApplication())))
+  extends TestKit(ActorSystem("UserManagementSpec", PersistenceTestKitPlugin.config.withFallback(ConfigFactory.defaultApplication())))
   with AnyWordSpecLike
   with BeforeAndAfterAll
   with BeforeAndAfterEach
@@ -42,7 +42,9 @@ class UserManagementSpec
 
     "return hashed password of user" in {
       userManagementActor ! GetPassword("david")
-      expectMsgType[String]
+      expectMsgPF() {
+        case Success(_: String) =>
+      }
     }
   }
 
