@@ -26,7 +26,7 @@ class UserManagement extends PersistentActor with ActorLogging {
         sender ! Error(s"User $username already exists")
       } else {
         log.info(s"User $username registered")
-        persistAsync(StoredPassword(username, password)) { user =>
+        persist(StoredPassword(username, password)) { user =>
           users += user.username -> user.password
           sender ! Success
         }
