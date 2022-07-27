@@ -12,6 +12,7 @@ import akka.pattern.StatusReply._
 import akka.pattern.ask
 import akka.util.Timeout
 import org.mindrot.jbcrypt.BCrypt
+import protocols.UserManagementJsonProtocol
 import spray.json._
 import utils.JwtHelper.createToken
 
@@ -20,11 +21,6 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
-trait UserManagementJsonProtocol extends DefaultJsonProtocol {
-  import UserManagementRoute._
-
-  implicit val userCredentialsFormat: RootJsonFormat[UserCredentials] = jsonFormat2(UserCredentials)
-}
 
 object UserManagementRoute extends UserManagementJsonProtocol with SprayJsonSupport{
   case class UserCredentials(username: String, password: String)
