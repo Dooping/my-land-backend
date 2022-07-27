@@ -9,6 +9,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
 import scala.language.postfixOps
+import scala.concurrent.duration._
 import scala.util.Random
 
 class LandSpec
@@ -123,6 +124,12 @@ class LandSpec
       expectMsgPF() {
         case Some(LandEntity(land.name, land.description, changePolygon.area, changePolygon.lat, changePolygon.lon, changePolygon.zoom, changePolygon.bearing, changePolygon.polygon)) =>
       }
+    }
+
+    "timeout after the specified inactivity duration" in {
+      val landActor = system.actorOf(Land.props("test8", 200 milliseconds))
+      watch(landActor)
+      expectTerminated(landActor)
     }
   }
 
