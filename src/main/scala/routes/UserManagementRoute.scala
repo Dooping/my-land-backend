@@ -13,7 +13,6 @@ import akka.pattern.ask
 import akka.util.Timeout
 import org.mindrot.jbcrypt.BCrypt
 import protocols.UserManagementJsonProtocol
-import spray.json._
 import utils.JwtHelper.createToken
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -50,17 +49,15 @@ object UserManagementRoute extends UserManagementJsonProtocol with SprayJsonSupp
 
   def route(authenticator: ActorRef): Route = {
     pathPrefix("api" / "user") {
-      post {
-        path("login") {
+      get {
           authenticateBasicAsync("MyLand", myAuthenticator(_, _)(authenticator)) { username =>
             val token = createToken(username, 30)
             respondWithHeader(RawHeader("Access-Token", token)) {
               complete(StatusCodes.OK)
             }
           }
-        } ~
-        path("register") {
-          entity(as[UserCredentials]) { user =>
+      } ~
+      (post & entity(as[UserCredentials])) { user =>
             val registrationFuture = (authenticator ? Register(user.username, user.password)).map {
               case Error(reason) =>
                 HttpResponse(StatusCodes.Conflict, entity = HttpEntity(reason.getMessage))
@@ -68,8 +65,6 @@ object UserManagementRoute extends UserManagementJsonProtocol with SprayJsonSupp
                 HttpResponse(StatusCodes.Created)
             }
             complete(registrationFuture)
-          }
-        }
       }
 
     }
