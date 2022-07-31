@@ -25,7 +25,7 @@ class UserManagementRouteSpec extends AnyWordSpecLike
     "register a new user" in {
       val userManagement = TestProbe("userManagement")
       val user = UserCredentials("testUsername", "testPassword")
-      Post("/api/user", user) ~> UserManagementRoute.route(userManagement.ref) ~> check {
+      Post("/user", user) ~> UserManagementRoute.route(userManagement.ref) ~> check {
         userManagement.receiveWhile() {
           case Register(user.username, user.password) => userManagement.reply(Success)
         }
@@ -37,7 +37,7 @@ class UserManagementRouteSpec extends AnyWordSpecLike
     "not allow duplicate users" in {
       val userManagement = TestProbe("userManagement")
       val user = UserCredentials("duplicateUsername", "testPassword")
-      Post("/api/user", user) ~> UserManagementRoute.route(userManagement.ref) ~> check {
+      Post("/user", user) ~> UserManagementRoute.route(userManagement.ref) ~> check {
         userManagement.receiveWhile() {
           case Register(user.username, user.password) => userManagement.reply(Error(s"User ${user.username} does not exist"))
         }
@@ -48,10 +48,10 @@ class UserManagementRouteSpec extends AnyWordSpecLike
 
     "return jwt token when credentials are correct" in {
       val userManagement = TestProbe("userManagement")
-      Get("/api/user") ~> addHeader(Authorization(BasicHttpCredentials("david", "p4ssw0rd"))) ~> UserManagementRoute.route(userManagement.ref) ~> check {
+      Get("/user") ~> addHeader(Authorization(BasicHttpCredentials("david", "p4ssw0rd"))) ~> UserManagementRoute.route(userManagement.ref) ~> check {
 
         userManagement.receiveWhile() {
-          case GetPassword(username) =>
+          case GetPassword(_) =>
             userManagement.reply(Success("$2a$12$yXfCWErAGl2NLIVPE03Uj.onmZhW8HX7UaIGHg4OaSnQ.bGhtA9t2"))
         }
 

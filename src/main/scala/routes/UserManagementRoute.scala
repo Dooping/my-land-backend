@@ -48,23 +48,23 @@ object UserManagementRoute extends UserManagementJsonProtocol with SprayJsonSupp
   }
 
   def route(authenticator: ActorRef): Route = {
-    pathPrefix("api" / "user") {
+    pathPrefix("user") {
       get {
-          authenticateBasicAsync("MyLand", myAuthenticator(_, _)(authenticator)) { username =>
-            val token = createToken(username, 30)
-            respondWithHeader(RawHeader("Access-Token", token)) {
-              complete(StatusCodes.OK)
-            }
+        authenticateBasicAsync("MyLand", myAuthenticator(_, _)(authenticator)) { username =>
+          val token = createToken(username, 30)
+          respondWithHeader(RawHeader("Access-Token", token)) {
+            complete(StatusCodes.OK)
           }
+        }
       } ~
       (post & entity(as[UserCredentials])) { user =>
-            val registrationFuture = (authenticator ? Register(user.username, user.password)).map {
-              case Error(reason) =>
-                HttpResponse(StatusCodes.Conflict, entity = HttpEntity(reason.getMessage))
-              case Success =>
-                HttpResponse(StatusCodes.Created)
-            }
-            complete(registrationFuture)
+        val registrationFuture = (authenticator ? Register(user.username, user.password)).map {
+          case Error(reason) =>
+            HttpResponse(StatusCodes.Conflict, entity = HttpEntity(reason.getMessage))
+          case Success =>
+            HttpResponse(StatusCodes.Created)
+        }
+        complete(registrationFuture)
       }
 
     }

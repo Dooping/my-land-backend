@@ -1,6 +1,6 @@
 package actors
 
-import akka.actor.{ActorSystem, Kill}
+import akka.actor.{ActorSystem, Kill, Props}
 import akka.pattern.StatusReply._
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.testkit.{ImplicitSender, TestKit}
@@ -12,6 +12,31 @@ import scala.language.postfixOps
 import scala.concurrent.duration._
 import scala.util.Random
 
+object LandSpec {
+ import actors.Land._
+  def generateRandomAddLand(name: String = Random.nextString(10))(implicit random: Random): AddLand = AddLand(
+    name,
+    random.nextString(50),
+    random.nextDouble(),
+    random.nextDouble(),
+    random.nextDouble(),
+    random.nextDouble(),
+    random.nextDouble(),
+    ""
+  )
+
+
+  def generateRandomLandEntity(name: String = Random.nextString(10))(implicit random: Random): LandEntity = LandEntity(
+    name,
+    random.nextString(50),
+    random.nextDouble(),
+    random.nextDouble(),
+    random.nextDouble(),
+    random.nextDouble(),
+    random.nextDouble(),
+    ""
+  )
+}
 class LandSpec
   extends TestKit(ActorSystem("LandSpec", PersistenceTestKitPlugin.config.withFallback(ConfigFactory.defaultApplication())))
   with AnyWordSpecLike
@@ -24,6 +49,7 @@ class LandSpec
   }
 
   import Land._
+  import LandSpec._
 
   implicit val random: Random = new Random()
 
@@ -105,7 +131,7 @@ class LandSpec
       val newDescription = "someDescription"
       landActor ! ChangeLandDescription(landName, newDescription)
       landActor ! GetLand(landName)
-      expectMsg(Success)
+      receiveN(1)
       val landWithNewDescription = expectMsgType[Some[LandEntity]]
       assert(land.value.copy(description = newDescription) == landWithNewDescription.value)
     }
@@ -118,7 +144,7 @@ class LandSpec
 
       val changePolygon = ChangePolygon(land.name, random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextString(20))
       landActor ! changePolygon
-      expectMsg(Success)
+      receiveN(1)
       landActor ! GetLand(land.name)
 
       expectMsgPF() {
@@ -127,21 +153,10 @@ class LandSpec
     }
 
     "timeout after the specified inactivity duration" in {
-      val landActor = system.actorOf(Land.props("test8", 200 milliseconds))
+      val landActor = system.actorOf(Props(new Land("test8", 100 milliseconds)))
       watch(landActor)
-      expectTerminated(landActor)
+      expectTerminated(landActor, 1 second)
     }
   }
-
-  def generateRandomAddLand(name: String = Random.nextString(10))(implicit random: Random): AddLand = AddLand(
-    name,
-    random.nextString(50),
-    random.nextDouble(),
-    random.nextDouble(),
-    random.nextDouble(),
-    random.nextDouble(),
-    random.nextDouble(),
-    ""
-  )
 
 }

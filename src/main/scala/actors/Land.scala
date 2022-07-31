@@ -8,7 +8,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 
 object Land {
-  def props(username: String, idleTimeout: Duration = 1 hour): Props = Props(new Land(username, idleTimeout))
+  def props(username: String): Props = Props(new Land(username))
 
   sealed trait Command
   case class GetLand(name: String) extends Command
@@ -20,7 +20,7 @@ object Land {
   case class LandEntity(name: String, description: String, area: Double, lat: Double, lon: Double, zoom: Double, bearing: Double, polygon: String)
 }
 
-class Land(username: String, receiveTimeoutDuration: Duration) extends PersistentActor with ActorLogging {
+class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends PersistentActor with ActorLogging {
   context.setReceiveTimeout(receiveTimeoutDuration)
 
   import Land._
@@ -64,7 +64,7 @@ class Land(username: String, receiveTimeoutDuration: Duration) extends Persisten
         val newLand = lands(landName).copy(description = description)
         persist(newLand) { land =>
           context.become(landReceive(lands + (land.name -> land)))
-          sender ! Success
+          sender ! Success(land)
         }
       } else {
         log.info(s"[$persistenceId] Land $landName does not exist.")
@@ -78,7 +78,7 @@ class Land(username: String, receiveTimeoutDuration: Duration) extends Persisten
         val newLand = LandEntity(landName, oldLand.description, area, lat, lon, zoom, bearing, polygon)
         persist(newLand) { land =>
           context.become(landReceive(lands + (land.name -> land)))
-          sender ! Success
+          sender ! Success(land)
         }
       } else {
         log.info(s"[$persistenceId] Land $landName does not exist.")
