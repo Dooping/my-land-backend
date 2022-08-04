@@ -46,7 +46,7 @@ class LandRouteSpec extends AnyWordSpecLike
     }), "user-management")
 
     "register a new land" in {
-      val randomLand = generateRandomAddLand("some land name")
+      val randomLand = generateRandomAddLand(Some("some land name"))
       Post("/land", randomLand) ~> LandRoute.route(userManagement, testUsername) ~> check {
         testProbe.receiveWhile() {
           case _: AddLand => testProbe.reply(Success())
@@ -56,7 +56,7 @@ class LandRouteSpec extends AnyWordSpecLike
     }
 
     "not register a land with the same name" in {
-      val randomLand = generateRandomAddLand("some land name")
+      val randomLand = generateRandomAddLand(Some("some land name"))
       Post("/land", randomLand) ~> LandRoute.route(userManagement, testUsername) ~> check {
         testProbe.receiveWhile() {
           case AddLand(name, _, _, _, _, _, _, _) => testProbe.reply(Error(s"Land $name already exists"))
@@ -72,7 +72,7 @@ class LandRouteSpec extends AnyWordSpecLike
       Get("/land") ~> LandRoute.route(userManagement, testUsername) ~> check {
         testProbe.receiveWhile() {
           case GetAllLands =>
-            testProbe.reply(List(generateRandomLandEntity("land1"), generateRandomLandEntity("land2")))
+            testProbe.reply(List(generateRandomLandEntity(Some(1)), generateRandomLandEntity(Some(2))))
         }
         val lands = responseAs[List[LandEntity]]
 
@@ -83,53 +83,53 @@ class LandRouteSpec extends AnyWordSpecLike
     }
 
     "get an existing land with parameter" in {
-      Get("/land?name=land%201") ~> LandRoute.route(userManagement, testUsername) ~> check {
+      Get("/land?id=1") ~> LandRoute.route(userManagement, testUsername) ~> check {
         testProbe.receiveWhile() {
-          case GetLand(landName) => testProbe.reply(Some(generateRandomLandEntity(landName)))
+          case GetLand(id) => testProbe.reply(Some(generateRandomLandEntity(Some(id))))
         }
         val land = responseAs[Option[LandEntity]]
         status shouldBe StatusCodes.OK
-        land.get.name shouldBe "land 1"
+        land.get.id shouldBe 1
       }
     }
 
     "get an existing land" in {
-      Get("/land/land%202") ~> LandRoute.route(userManagement, testUsername) ~> check {
+      Get("/land/1") ~> LandRoute.route(userManagement, testUsername) ~> check {
         testProbe.receiveWhile() {
-          case GetLand(landName) => testProbe.reply(Some(generateRandomLandEntity(landName)))
+          case GetLand(id) => testProbe.reply(Some(generateRandomLandEntity(Some(id))))
         }
         val land = responseAs[Option[LandEntity]]
         status shouldBe StatusCodes.OK
-        land.get.name shouldBe "land 2"
+        land.get.id shouldBe 1
       }
     }
 
     "change an existing land's description" in {
-      val testLandName = "land 1"
+      val testLandId = 1
       val testLandNewDescription = "some hanged description"
-      Patch("/land", ChangeLandDescription(testLandName, testLandNewDescription)) ~> LandRoute.route(userManagement, testUsername) ~> check {
+      Patch("/land", ChangeLandDescription(testLandId, testLandNewDescription)) ~> LandRoute.route(userManagement, testUsername) ~> check {
         testProbe.receiveWhile() {
-          case ChangeLandDescription(landName, description) => testProbe.reply(Success(generateRandomLandEntity(landName).copy(description = description)))
+          case ChangeLandDescription(id, description) => testProbe.reply(Success(generateRandomLandEntity(Some(id)).copy(description = description)))
         }
         val land = responseAs[LandEntity]
         status shouldBe StatusCodes.OK
-        land.name shouldBe testLandName
+        land.id shouldBe testLandId
         land.description shouldBe testLandNewDescription
       }
     }
 
     "change an existing land's polygon attributes" in {
-      val testLandName = "land 1"
-      Patch("/land", ChangePolygon(testLandName, 1L, 2L, 3L, 4L, 5L, "changedPolygon")) ~> LandRoute.route(userManagement, testUsername) ~> check {
+      val testLandId = 1
+      Patch("/land", ChangePolygon(testLandId, 1L, 2L, 3L, 4L, 5L, "changedPolygon")) ~> LandRoute.route(userManagement, testUsername) ~> check {
         testProbe.receiveWhile() {
-          case ChangePolygon(landName, area, lat, lon, zoom, bearing, polygon) =>
-            testProbe.reply(Success(LandEntity(landName, "should not matter", area, lat, lon, zoom, bearing, polygon)))
+          case ChangePolygon(id, area, lat, lon, zoom, bearing, polygon) =>
+            testProbe.reply(Success(LandEntity(id, "land name", "should not matter", area, lat, lon, zoom, bearing, polygon)))
         }
         val land = responseAs[LandEntity]
         status shouldBe StatusCodes.OK
-        land.name shouldBe testLandName
+        land.id shouldBe testLandId
         land should matchPattern {
-          case LandEntity(`testLandName`, _, 1L, 2L, 3L, 4L, 5L, "changedPolygon") =>
+          case LandEntity(`testLandId`, _, _, 1L, 2L, 3L, 4L, 5L, "changedPolygon") =>
         }
       }
     }

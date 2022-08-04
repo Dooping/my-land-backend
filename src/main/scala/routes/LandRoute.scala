@@ -23,8 +23,8 @@ object LandRoute extends LandJsonProtocol {
   def route(authenticator: ActorRef, username: String): Route = {
     pathPrefix("land") {
       get {
-        (parameter(Symbol("name").as[String]) | path(Segment)) { landName =>
-          val getLandFuture = (authenticator ? LandCommand(username, GetLand(landName)))
+        (parameter(Symbol("id").as[Int]) | path(IntNumber)) { id =>
+          val getLandFuture = (authenticator ? LandCommand(username, GetLand(id)))
             .mapTo[Option[LandEntity]]
           complete(getLandFuture)
         } ~

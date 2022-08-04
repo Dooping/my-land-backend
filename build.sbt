@@ -37,6 +37,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-testkit" % akkaVersion,
   "org.scalatest" %% "scalatest" % scalaTestVersion,
   "org.scalacheck" %% "scalacheck" % "1.16.0",
+  "com.chuusai" %% "shapeless" % "2.3.9",
 
   "org.mindrot" % "jbcrypt" % "0.4",
 

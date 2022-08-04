@@ -1,41 +1,45 @@
 package actors
 
-import akka.actor.{ActorSystem, Kill, Props}
+import akka.actor.{Actor, ActorRef, ActorSystem, Kill, PoisonPill, Props}
 import akka.pattern.StatusReply._
 import akka.persistence.testkit.PersistenceTestKitPlugin
+import akka.persistence.testkit.scaladsl.PersistenceTestKit
 import akka.testkit.{ImplicitSender, TestKit}
 import com.typesafe.config.ConfigFactory
+import org.scalacheck.Gen
 import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
+import shapeless.syntax.std.tuple._
 
 import scala.language.postfixOps
 import scala.concurrent.duration._
 import scala.util.Random
 
 object LandSpec {
- import actors.Land._
-  def generateRandomAddLand(name: String = Random.nextString(10))(implicit random: Random): AddLand = AddLand(
-    name,
-    random.nextString(50),
-    random.nextDouble(),
-    random.nextDouble(),
-    random.nextDouble(),
-    random.nextDouble(),
-    random.nextDouble(),
-    ""
-  )
+
+  import actors.Land._
+
+  private def landGen(name: Option[String]): Gen[(String, String, Double, Double, Double, Double, Double, String)] = for {
+    name <- name.map(Gen.const).getOrElse(Gen.alphaStr)
+    description <- Gen.alphaStr
+    area <- Gen.double
+    lat <- Gen.double
+    lon <- Gen.double
+    zoom <- Gen.double
+    bearing <- Gen.double
+    polygon <- Gen.alphaStr
+  } yield (name, description, area, lat, lon, zoom, bearing, polygon)
+
+  def generateRandomAddLand(name: Option[String] = None): AddLand = AddLand tupled landGen(name).sample.get
 
 
-  def generateRandomLandEntity(name: String = Random.nextString(10))(implicit random: Random): LandEntity = LandEntity(
-    name,
-    random.nextString(50),
-    random.nextDouble(),
-    random.nextDouble(),
-    random.nextDouble(),
-    random.nextDouble(),
-    random.nextDouble(),
-    ""
-  )
+  def generateRandomLandEntity(id: Option[Int] = None): LandEntity = {
+    val landEntityGen = for {
+      id <- id.map(Gen.const).getOrElse(Gen.choose(1, 1000))
+      land <- landGen(None)
+    } yield LandEntity tupled land.+:(id)
+    landEntityGen.sample.get
+  }
 }
 class LandSpec
   extends TestKit(ActorSystem("LandSpec", PersistenceTestKitPlugin.config.withFallback(ConfigFactory.defaultApplication())))
@@ -48,6 +52,22 @@ class LandSpec
     TestKit.shutdownActorSystem(system)
   }
 
+  val username = "test"
+
+  val persistenceTestKit: PersistenceTestKit = PersistenceTestKit(system)
+  var landTestActor: ActorRef = Actor.noSender
+
+  override def beforeEach(): Unit = {
+    super.beforeEach()
+    persistenceTestKit.clearAll()
+    landTestActor = system.actorOf(Land.props(username))
+  }
+
+  override def afterEach(): Unit = {
+    super.afterEach()
+    landTestActor ! PoisonPill
+  }
+
   import Land._
   import LandSpec._
 
@@ -56,106 +76,99 @@ class LandSpec
   "A land actor" should {
 
     "add a land correctly" in {
-      val landActor = system.actorOf(Land.props("test1"))
-      landActor ! generateRandomAddLand()
+      landTestActor ! generateRandomAddLand()
       expectMsg(Success)
     }
 
     "not be able to add two lands with the same name" in {
-      val landActor = system.actorOf(Land.props("test2"))
       val landName = "Some land name"
-      landActor ! generateRandomAddLand(landName)
+      landTestActor ! generateRandomAddLand(Some(landName))
       expectMsg(Success)
 
-      landActor ! generateRandomAddLand(landName)
+      landTestActor ! generateRandomAddLand(Some(landName))
       expectMsg(Error(s"Land $landName already exists"))
     }
 
     "get a land registered before" in {
-      val landActor = system.actorOf(Land.props("test3"))
       val landName = random.nextString(10)
-      landActor ! generateRandomAddLand(landName)
+      landTestActor ! generateRandomAddLand(Some(landName))
       expectMsg(Success)
-      landActor ! GetLand(landName)
+      landTestActor ! GetLand(1)
       expectMsgType[Some[LandEntity]]
     }
 
     "get all lands registered before" in {
-      val landActor = system.actorOf(Land.props("test4"))
-      landActor ! GetAllLands
+      landTestActor ! GetAllLands
       val lands = expectMsgType[List[LandEntity]]
       assert(lands.isEmpty)
 
-      landActor ! generateRandomAddLand()
-      landActor ! generateRandomAddLand()
+      landTestActor ! generateRandomAddLand()
+      landTestActor ! generateRandomAddLand()
       receiveN(2)
-      landActor ! GetAllLands
+      landTestActor ! GetAllLands
       val landsAfterAdding = expectMsgType[List[LandEntity]]
       assert(landsAfterAdding.length == 2)
     }
 
     "not find a user that does not exist" in {
-      val landActor = system.actorOf(Land.props("test5"))
 
-      landActor ! generateRandomAddLand()
-      landActor ! generateRandomAddLand()
+      landTestActor ! generateRandomAddLand()
+      landTestActor ! generateRandomAddLand()
       receiveN(2)
 
-      landActor ! GetLand("notALand")
+      landTestActor ! GetLand(-1)
       expectMsg[Option[LandEntity]](None)
     }
 
     "recover previously added lands" in {
-      val landActor = system.actorOf(Land.props("test6"))
       val landName1 = "landName1"
       val landName2 = "landName2"
-      landActor ! generateRandomAddLand(landName1)
-      landActor ! generateRandomAddLand(landName2)
+      landTestActor ! generateRandomAddLand(Some(landName1))
+      landTestActor ! generateRandomAddLand(Some(landName2))
       receiveN(2)
-      landActor ! Kill
+      landTestActor ! Kill
 
-      val anotherLandActor = system.actorOf(Land.props("test6"))
-      anotherLandActor ! GetAllLands
+      Thread.sleep(100)
+      landTestActor = system.actorOf(Land.props(username))
+      landTestActor ! GetAllLands
       val landsAfterAdding = expectMsgType[List[LandEntity]]
       assert(landsAfterAdding.length == 2)
     }
 
     "change only the description when receiving ChangeLandDescription" in {
-      val landActor = system.actorOf(Land.props("test7"))
       val landName = "landName"
-      landActor ! generateRandomAddLand(landName)
+      landTestActor ! generateRandomAddLand(Some(landName))
       expectMsg(Success)
-      landActor ! GetLand(landName)
+      landTestActor ! GetLand(1)
       val land = expectMsgType[Some[LandEntity]]
 
       val newDescription = "someDescription"
-      landActor ! ChangeLandDescription(landName, newDescription)
-      landActor ! GetLand(landName)
+      landTestActor ! ChangeLandDescription(1, newDescription)
+      landTestActor ! GetLand(1)
       receiveN(1)
       val landWithNewDescription = expectMsgType[Some[LandEntity]]
       assert(land.value.copy(description = newDescription) == landWithNewDescription.value)
     }
 
     "change all fields except name & description when receiving ChangePolygon" in {
-      val landActor = system.actorOf(Land.props("test7"))
       val land = generateRandomAddLand()
-      landActor ! land
+      landTestActor ! land
       expectMsg(Success)
 
-      val changePolygon = ChangePolygon(land.name, random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextString(20))
-      landActor ! changePolygon
+      val changePolygon = ChangePolygon(1, random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextString(20))
+      landTestActor ! changePolygon
       receiveN(1)
-      landActor ! GetLand(land.name)
+      landTestActor ! GetLand(1)
 
       expectMsgPF() {
-        case Some(LandEntity(land.name, land.description, changePolygon.area, changePolygon.lat, changePolygon.lon, changePolygon.zoom, changePolygon.bearing, changePolygon.polygon)) =>
+        case Some(LandEntity(1, land.name, land.description, changePolygon.area, changePolygon.lat, changePolygon.lon, changePolygon.zoom, changePolygon.bearing, changePolygon.polygon)) =>
       }
     }
 
     "timeout after the specified inactivity duration" in {
-      val landActor = system.actorOf(Props(new Land("test8", 100 milliseconds)))
-      watch(landActor)
-      expectTerminated(landActor, 1 second)
+      val landTestActor = system.actorOf(Props(new Land("test8", 100 milliseconds)))
+      watch(landTestActor)
+      expectTerminated(landTestActor, 1 second)
     }
   }
 
