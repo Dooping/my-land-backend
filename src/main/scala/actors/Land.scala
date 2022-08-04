@@ -86,7 +86,7 @@ class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends 
       }
 
     case ReceiveTimeout =>
-      log.info(s"[$persistenceId] Actor idle, stopping")
+      log.info(s"[$persistenceId] Actor idle, stopping...")
       context.stop(self)
 
   }

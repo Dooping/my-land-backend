@@ -11,7 +11,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import scala.language.postfixOps
 
 class LandLifecycleSpec
-  extends TestKit(ActorSystem("LandThroughUserManagementSpec", PersistenceTestKitPlugin.config.withFallback(ConfigFactory.load().getConfig("interceptingLogMessages"))))
+  extends TestKit(ActorSystem("LandLifecycleSpec", PersistenceTestKitPlugin.config.withFallback(ConfigFactory.load().getConfig("interceptingLogMessages"))))
     with AnyWordSpecLike
     with BeforeAndAfterAll
     with BeforeAndAfterEach
