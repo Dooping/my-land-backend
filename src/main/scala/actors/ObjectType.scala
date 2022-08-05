@@ -94,7 +94,7 @@ class ObjectType(username: String, land: Int, receiveTimeoutDuration: Duration =
           log.info(s"[$persistenceId] Deleting $id")
           persist(ObjectTypeDeleted(id)) { event =>
             context.become(objectTypeReceive(objectTypes - event.id, currentId))
-            sender ! Success
+            sender ! Success()
           }
         case None =>
           log.info(s"[$persistenceId] ObjectType $id not found")

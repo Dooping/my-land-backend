@@ -30,7 +30,7 @@ class UserManagement extends PersistentActor with ActorLogging {
         log.info(s"[$persistenceId] User $username registered")
         persist(StoredPassword(username, password)) { user =>
           users += user.username -> user.password
-          sender ! Success
+          sender ! Success()
         }
       }
 

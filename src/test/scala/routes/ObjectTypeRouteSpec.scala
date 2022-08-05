@@ -1,11 +1,11 @@
 package routes
 
 import actors.UserManagement
-import akka.actor.{Actor, Props}
+import akka.actor.{Actor, ActorRef, Props}
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.pattern.StatusReply._
-import akka.testkit.{TestKit, TestProbe}
+import akka.testkit.{TestActor, TestKit, TestProbe}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -20,15 +20,15 @@ class ObjectTypeRouteSpec extends AnyWordSpecLike
   with ScalatestRouteTest
   with ObjectTypeJsonProtocol {
 
-  override def afterAll(): Unit = {
-    TestKit.shutdownActorSystem(system)
-  }
-
   import actors.ObjectTypeSpec._
   import actors.ObjectType._
   import actors.Land.LandObjectTypesCommand
   import actors.Land
   import actors.UserManagement.LandCommand
+
+  override def afterAll(): Unit = {
+    TestKit.shutdownActorSystem(system)
+  }
 
   private val testUsername = "david gago"
   private val testLandId = 1
@@ -37,6 +37,7 @@ class ObjectTypeRouteSpec extends AnyWordSpecLike
   private val testProbe = TestProbe("objectTypeProbe")
 
   "An object type route" should {
+    Thread.sleep(500)
 
     val landActor = system.actorOf(Props(new Land(testUsername) {
       override def receiveCommand: Receive = {
@@ -51,15 +52,18 @@ class ObjectTypeRouteSpec extends AnyWordSpecLike
         case LandCommand(_, cmd) =>
           landActor.forward(cmd)
       }
+
+      override def receiveRecover: Receive = Actor.emptyBehavior
     }), "user-management")
 
     "register a new object type" in {
       val randomObjectType = generateObjectType
+      testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
+        case AddObjectType(obj) =>
+          sender ! Success(generateObjectTypeEntity.sample.get.copy(name = obj.name, color = obj.color, icon = obj.icon))
+          TestActor.KeepRunning
+      })
       Post("/objectType", randomObjectType) ~> ObjectTypeRoute.route(userManagement, testUsername, testLandId) ~> check {
-        testProbe.receiveWhile() {
-          case AddObjectType(obj) =>
-            testProbe.reply(Success(generateObjectTypeEntity.sample.get.copy(name = obj.name, color = obj.color, icon = obj.icon)))
-        }
         val objType = responseAs[ObjectTypeEntity]
         status shouldBe StatusCodes.Created
         objType.name shouldBe randomObjectType.name
@@ -69,12 +73,13 @@ class ObjectTypeRouteSpec extends AnyWordSpecLike
     }
 
     "get all previously registered lands" in {
+      val listToReturn = generateObjectTypeListEntity
+      testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
+        case GetObjectTypes =>
+          sender ! listToReturn
+          TestActor.KeepRunning
+      })
       Get("/objectType") ~> ObjectTypeRoute.route(userManagement, testUsername, testLandId) ~> check {
-        val listToReturn = generateObjectTypeListEntity
-        testProbe.receiveWhile() {
-          case GetObjectTypes =>
-            testProbe.reply(listToReturn)
-        }
         val objectTypes = responseAs[List[ObjectTypeEntity]]
 
         contentType shouldBe ContentTypes.`application/json`
@@ -86,11 +91,12 @@ class ObjectTypeRouteSpec extends AnyWordSpecLike
     "change existing object type" in {
       val payload = generateObjectType
       val objTypeId = 1
+      testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
+        case ChangeObjectType(id, obj) =>
+          sender ! Success(ObjectTypeEntity(id, obj.name, obj.color, obj.icon, dateGen.sample.get, new Date))
+          TestActor.KeepRunning
+      })
       Put(s"/objectType/$objTypeId", payload) ~> ObjectTypeRoute.route(userManagement, testUsername, testLandId) ~> check {
-        testProbe.receiveWhile() {
-          case ChangeObjectType(id, obj) =>
-            testProbe.reply(Success(ObjectTypeEntity(id, obj.name, obj.color, obj.icon, dateGen.sample.get, new Date)))
-        }
         val objType = responseAs[ObjectTypeEntity]
         status shouldBe StatusCodes.OK
         objType.id shouldBe objTypeId
@@ -102,11 +108,12 @@ class ObjectTypeRouteSpec extends AnyWordSpecLike
 
     "delete existing object type" in {
       val objTypeId = 1
+      testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
+        case DeleteObjectType(id) =>
+          sender ! Success()
+          TestActor.KeepRunning
+      })
       Delete(s"/objectType/$objTypeId") ~> ObjectTypeRoute.route(userManagement, testUsername, testLandId) ~> check {
-        testProbe.receiveWhile() {
-          case DeleteObjectType(id) =>
-            testProbe.reply(Success())
-        }
         status shouldBe StatusCodes.OK
       }
     }

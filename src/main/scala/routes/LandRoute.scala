@@ -18,7 +18,7 @@ object LandRoute extends LandJsonProtocol {
   import actors.Land._
   import actors.UserManagement.LandCommand
 
-  implicit val timeout: Timeout = Timeout(5 seconds)
+  implicit val timeout: Timeout = Timeout(3 seconds)
 
   def route(authenticator: ActorRef, username: String): Route = {
     pathPrefix("land") {

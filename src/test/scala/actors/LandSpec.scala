@@ -77,13 +77,13 @@ class LandSpec
 
     "add a land correctly" in {
       landTestActor ! generateRandomAddLand()
-      expectMsg(Success)
+      expectMsg(Success())
     }
 
     "not be able to add two lands with the same name" in {
       val landName = "Some land name"
       landTestActor ! generateRandomAddLand(Some(landName))
-      expectMsg(Success)
+      expectMsg(Success())
 
       landTestActor ! generateRandomAddLand(Some(landName))
       expectMsg(Error(s"Land $landName already exists"))
@@ -92,7 +92,7 @@ class LandSpec
     "get a land registered before" in {
       val landName = random.nextString(10)
       landTestActor ! generateRandomAddLand(Some(landName))
-      expectMsg(Success)
+      expectMsg(Success())
       landTestActor ! GetLand(1)
       expectMsgType[Some[LandEntity]]
     }
@@ -138,7 +138,7 @@ class LandSpec
     "change only the description when receiving ChangeLandDescription" in {
       val landName = "landName"
       landTestActor ! generateRandomAddLand(Some(landName))
-      expectMsg(Success)
+      expectMsg(Success())
       landTestActor ! GetLand(1)
       val land = expectMsgType[Some[LandEntity]]
 
@@ -153,7 +153,7 @@ class LandSpec
     "change all fields except name & description when receiving ChangePolygon" in {
       val land = generateRandomAddLand()
       landTestActor ! land
-      expectMsg(Success)
+      expectMsg(Success())
 
       val changePolygon = ChangePolygon(1, random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextString(20))
       landTestActor ! changePolygon

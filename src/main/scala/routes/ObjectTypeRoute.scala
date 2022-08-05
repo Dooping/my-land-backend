@@ -19,7 +19,7 @@ object ObjectTypeRoute extends ObjectTypeJsonProtocol {
   import actors.Land.LandObjectTypesCommand
   import actors.UserManagement.LandCommand
 
-  implicit val timeout: Timeout = Timeout(5 seconds)
+  implicit val timeout: Timeout = Timeout(3 seconds)
 
   def route(authenticator: ActorRef, username: String, landId: Int): Route = {
     pathPrefix("objectType") {
@@ -52,7 +52,6 @@ object ObjectTypeRoute extends ObjectTypeJsonProtocol {
         } ~
         delete {
           val deleteObjectType = (authenticator ? LandCommand(username, LandObjectTypesCommand(landId, DeleteObjectType(id))))
-            .mapTo[StatusReply[Any]]
             .map {
               case Success(_) => HttpResponse(StatusCodes.OK)
               case Error(reason) => HttpResponse(StatusCodes.BadRequest, entity = HttpEntity(reason.getMessage))

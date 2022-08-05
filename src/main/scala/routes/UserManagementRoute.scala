@@ -37,7 +37,7 @@ object UserManagementRoute extends UserManagementJsonProtocol with SprayJsonSupp
     }
   }
 
-  implicit val timeout: Timeout = Timeout(5 seconds)
+  implicit val timeout: Timeout = Timeout(3 seconds)
 
   def myAuthenticator(username: String, password: String)(authenticator: ActorRef): Future[Option[String]] = {
     (authenticator ? GetPassword(username)).map {
@@ -61,7 +61,7 @@ object UserManagementRoute extends UserManagementJsonProtocol with SprayJsonSupp
         val registrationFuture = (authenticator ? Register(user.username, user.password)).map {
           case Error(reason) =>
             HttpResponse(StatusCodes.Conflict, entity = HttpEntity(reason.getMessage))
-          case Success =>
+          case Success(_) =>
             HttpResponse(StatusCodes.Created)
         }
         complete(registrationFuture)

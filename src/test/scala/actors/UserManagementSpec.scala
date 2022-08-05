@@ -32,7 +32,7 @@ class UserManagementSpec
 
     "register a user correctly" in {
       userManagementActor ! Register(username, passwordHashed)
-      expectMsg(Success)
+      expectMsg(Success())
     }
 
     "fail when registering a user again" in {

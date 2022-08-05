@@ -1,10 +1,11 @@
 package routes
 
 import actors.UserManagement.LandCommand
+import akka.actor.ActorRef
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.model.headers.{Authorization, OAuth2BearerToken}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
-import akka.testkit.{TestKit, TestProbe}
+import akka.testkit.{TestActor, TestKit, TestProbe}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -74,10 +75,12 @@ class AuthorizationRouteSpec extends AnyWordSpecLike
 
     "accept a valid token in header" in {
       val userManager = TestProbe("userManagement")
+      userManager.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
+        case LandCommand(_, GetAllLands) =>
+          sender ! List[LandEntity]()
+          TestActor.KeepRunning
+      })
       Get("/api/land") ~> addHeader(Authorization(OAuth2BearerToken(testToken))) ~> combinedRoute(userManager.ref) ~> check {
-        userManager.receiveWhile() {
-          case LandCommand(_, GetAllLands) => userManager.reply(List[LandEntity]())
-        }
         val result = entityAs[List[LandEntity]]
         status shouldBe StatusCodes.OK
         result.length shouldBe 0
@@ -86,10 +89,12 @@ class AuthorizationRouteSpec extends AnyWordSpecLike
 
     "accept a valid token as parameter" in {
       val userManager = TestProbe("userManagement")
+      userManager.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
+        case LandCommand(_, GetAllLands) =>
+          sender ! List[LandEntity]()
+          TestActor.KeepRunning
+      })
       Get(s"/api/land?access_token=$testToken") ~> combinedRoute(userManager.ref) ~> check {
-        userManager.receiveWhile() {
-          case LandCommand(_, GetAllLands) => userManager.reply(List[LandEntity]())
-        }
         status shouldBe StatusCodes.OK
       }
     }

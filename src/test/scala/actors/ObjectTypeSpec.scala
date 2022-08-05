@@ -107,7 +107,7 @@ class ObjectTypeSpec
       receiveOne(1 second)
 
       objectTypeActor ! DeleteObjectType(1)
-      expectMsg(Success)
+      expectMsg(Success())
     }
 
     "delete a non existing object type" in {
