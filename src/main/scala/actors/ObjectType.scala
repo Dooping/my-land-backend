@@ -13,7 +13,7 @@ object ObjectType {
 
   case class ObjType(name: String, color: String, icon: String)
 
-  trait Command
+  sealed trait Command
   case class AddObjectType(obj: ObjType) extends Command
   case class BatchAddObjectType(objectTypes: List[ObjType]) extends Command
   case object GetObjectTypes extends Command

@@ -41,8 +41,7 @@ class UserManagement extends PersistentActor with ActorLogging {
       if (users.contains(username)) {
         val userLand: ActorRef = userLands.getOrElse(username, {
           log.info(s"[$persistenceId] Creating land actor for $username")
-          val land = context.actorOf(Land.props(username))
-          log.info(land.path.toString)
+          val land = context.actorOf(Land.props(username), s"land-$username")
           userLands += username -> land
           context.watch(land)
           land
