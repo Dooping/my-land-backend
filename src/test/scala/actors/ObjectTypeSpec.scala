@@ -1,15 +1,17 @@
 package actors
 
 import akka.actor.{Actor, ActorRef, ActorSystem, PoisonPill, Props}
-import akka.pattern.StatusReply.Success
+import akka.pattern.StatusReply.{Error, Success}
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
 import akka.testkit.{ImplicitSender, TestKit}
 import com.typesafe.config.ConfigFactory
-import org.scalacheck.Gen
+import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.wordspec._
 
+import java.time.{LocalDateTime, ZoneId}
+import java.util.Date
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -26,6 +28,21 @@ object ObjectTypeSpec {
   def generateObjectType: ObjType = objectTypeGen.sample.get
   def generateObjectTypeList: List[ObjType] = Gen.containerOfN[List, ObjType](Gen.choose(1, 10).sample.get,objectTypeGen).sample.get
 
+  def dateGen: Gen[Date] =
+    Gen.choose(
+      min = LocalDateTime.of(2000,1, 1, 0, 0,0),
+      max = LocalDateTime.now()
+    ).map(_.atZone(ZoneId.systemDefault()).toInstant).map(Date.from)
+  implicit val dateArb: Arbitrary[Date] = Arbitrary(dateGen)
+  def generateObjectTypeEntity: Gen[ObjectTypeEntity] = {
+    for {
+      id <- Gen.choose(1, 1000)
+      modifiedAt <- dateGen
+      createdAt <- dateGen
+      objType <- objectTypeGen
+    } yield ObjectTypeEntity(id, objType.name, objType.color, objType.icon, createdAt, modifiedAt)
+  }
+  def generateObjectTypeListEntity: List[ObjectTypeEntity] = Gen.containerOfN[List, ObjectTypeEntity](Gen.choose(1, 10).sample.get,generateObjectTypeEntity).sample.get
 }
 class ObjectTypeSpec
   extends TestKit(ActorSystem("ObjectTypeSpec", PersistenceTestKitPlugin.config.withFallback(ConfigFactory.load().getConfig("interceptingLogMessages"))))
@@ -86,8 +103,16 @@ class ObjectTypeSpec
     }
 
     "delete an existing object type" in {
+      objectTypeActor ! AddObjectType(generateObjectType)
+      receiveOne(1 second)
+
       objectTypeActor ! DeleteObjectType(1)
       expectMsg(Success)
+    }
+
+    "delete a non existing object type" in {
+      objectTypeActor ! DeleteObjectType(1)
+      expectMsg(Error(s"No object type found with id 1"))
     }
 
     "add multiple object types" in {

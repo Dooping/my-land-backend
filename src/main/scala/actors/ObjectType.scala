@@ -89,11 +89,18 @@ class ObjectType(username: String, land: Int, receiveTimeoutDuration: Duration =
       sender ! objectTypes.values.toList
 
     case DeleteObjectType(id) =>
-      log.info(s"[$persistenceId] Deleting $id")
-      persist(ObjectTypeDeleted(id)) { event =>
-        context.become(objectTypeReceive(objectTypes - event.id, currentId))
-        sender ! Success
+      objectTypes.get(id) match {
+        case Some(_) =>
+          log.info(s"[$persistenceId] Deleting $id")
+          persist(ObjectTypeDeleted(id)) { event =>
+            context.become(objectTypeReceive(objectTypes - event.id, currentId))
+            sender ! Success
+          }
+        case None =>
+          log.info(s"[$persistenceId] ObjectType $id not found")
+          sender ! Error(s"No object type found with id $id")
       }
+
 
     case ReceiveTimeout =>
       log.info(s"[$persistenceId] Actor idle, stopping...")

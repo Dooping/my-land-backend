@@ -31,8 +31,6 @@ class LandRouteSpec extends AnyWordSpecLike
   import LandSpec._
 
   private val testUsername = "david gago"
-  implicit val random: Random = new Random()
-
 
   private val testProbe = TestProbe("userManagement")
 
