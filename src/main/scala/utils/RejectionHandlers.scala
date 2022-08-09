@@ -3,7 +3,7 @@ package utils
 import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.AuthenticationFailedRejection.{CredentialsMissing, CredentialsRejected}
 import akka.http.scaladsl.server.Directives.complete
-import akka.http.scaladsl.server.{AuthenticationFailedRejection, RejectionHandler}
+import akka.http.scaladsl.server.{AuthenticationFailedRejection, AuthorizationFailedRejection, RejectionHandler}
 
 object RejectionHandlers {
 
@@ -13,6 +13,8 @@ object RejectionHandlers {
       complete(StatusCodes.Unauthorized, "invalid token")
     case AuthenticationFailedRejection(CredentialsMissing, _) =>
       complete(StatusCodes.Unauthorized, "missing token")
+    case AuthorizationFailedRejection =>
+      complete(StatusCodes.Forbidden)
   }.result()
 
 }

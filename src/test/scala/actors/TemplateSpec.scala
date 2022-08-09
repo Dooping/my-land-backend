@@ -40,7 +40,7 @@ class TemplateSpec
   override def beforeAll(): Unit = {
     super.beforeAll()
     userManagerActor = system.actorOf(Props[UserManagement], "user-manager")
-    templateActor = system.actorOf(Template.props(username, userManagerActor))
+    templateActor = system.actorOf(Template.props(userManagerActor))
   }
 
 
@@ -127,7 +127,7 @@ class TemplateSpec
       val newTemplate = generateObjectTypeList
       templateActor ! RegisterNewLandTemplate(testingLocale, testingName, newTemplate)
       expectMsg(Success())
-      templateActor ! GetObjectTypeOptions(testingLocale)
+      templateActor ! GetObjectTypeOptions(username, testingLocale)
       val response = expectMsgType[StatusReply[ObjectTypeOptionsResponse]].getValue
 
       assert(response.default.contains(testingName))
@@ -140,7 +140,7 @@ class TemplateSpec
       val newName = nameGen.sample.get
       templateActor ! RegisterNewLandTemplate("ot", newName, newTemplate)
       expectMsg(Success())
-      templateActor ! GetObjectTypeOptions("ot")
+      templateActor ! GetObjectTypeOptions(username, "ot")
       val response = expectMsgType[StatusReply[ObjectTypeOptionsResponse]].getValue
 
       assert(response.default.contains(newName))
@@ -156,7 +156,7 @@ class TemplateSpec
       userManagerActor ! LandCommand(username, LandObjectTypesCommand(landEntity.getValue.id, BatchAddObjectType(landTemplate)))
       val registeredLandTemplate = expectMsgType[StatusReply[ObjectTypeEntity]]
 
-      templateActor ! GetObjectTypeOptions(testingLocale)
+      templateActor ! GetObjectTypeOptions(username, testingLocale)
       val response = expectMsgType[StatusReply[ObjectTypeOptionsResponse]].getValue
 
       assert(response.default.contains(testingName))
@@ -176,12 +176,12 @@ class TemplateSpec
           TestActor.KeepRunning
         case _ => TestActor.KeepRunning
       })
-      val templateActorTest = system.actorOf(Template.props(username, userManagerProbe.ref))
+      val templateActorTest = system.actorOf(Template.props(userManagerProbe.ref))
 
       templateActorTest ! RegisterNewLandTemplate(testingLocale, testingName, generateObjectTypeList)
       expectMsg(Success())
 
-      templateActorTest ! GetObjectTypeOptions(testingLocale)
+      templateActorTest ! GetObjectTypeOptions(username, testingLocale)
 
       val response = expectMsgType[StatusReply[ObjectTypeOptionsResponse]].getValue
 
@@ -201,16 +201,16 @@ class TemplateSpec
       })
 
       templateActor ! PoisonPill
-      templateActor = system.actorOf(Template.props(username, userProbe.ref))
+      templateActor = system.actorOf(Template.props(userProbe.ref))
       templateActor ! RegisterNewLandTemplate(testingLocale, testingName, generateObjectTypeList)
       expectMsg(Success())
 
-      templateActor ! GetObjectTypeOptions(testingLocale)
+      templateActor ! GetObjectTypeOptions(username, testingLocale)
       val response = expectMsgType[StatusReply[ObjectTypeOptionsResponse]].getValue
       templateActor ! Kill
 
-      templateActor = system.actorOf(Template.props(username, userProbe.ref))
-      templateActor ! GetObjectTypeOptions(testingLocale)
+      templateActor = system.actorOf(Template.props(userProbe.ref))
+      templateActor ! GetObjectTypeOptions(username, testingLocale)
       val responseAfterRestart = expectMsgType[StatusReply[ObjectTypeOptionsResponse]].getValue
 
       assert(response == responseAfterRestart)

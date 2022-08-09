@@ -1,7 +1,7 @@
 package actors
 
 import actors.ObjectType.ObjType
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, Stash, Timers}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props, ReceiveTimeout, Stash, Timers}
 import akka.persistence.{PersistentActor, RecoveryCompleted}
 import akka.pattern.StatusReply._
 
@@ -9,13 +9,13 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 
 object Template {
-  def props(username: String, userManager: ActorRef): Props = Props(new Template(username, userManager))
+  def props(userManager: ActorRef): Props = Props(new Template(userManager))
 
   case object TimerKey
-  case object Timeout
+  case object TimerTimeout
 
   trait Command
-  case class GetObjectTypeOptions(locale: String = "en") extends Command
+  case class GetObjectTypeOptions(username: String, locale: String) extends Command
   case class RegisterNewLandTemplate(locale: String, name: String, objTypes: List[ObjType]) extends Command
   case class ChangeLandTemplate(locale: String, name: String, objTypes: List[ObjType]) extends Command
   case class DeleteLandTemplate(locale: String, name: String) extends Command
@@ -27,7 +27,9 @@ object Template {
   // responses
   case class ObjectTypeOptionsResponse(default: Map[String, List[ObjType]], fromLands: Set[List[ObjType]])
 }
-class Template(username: String, user: ActorRef) extends Timers with PersistentActor with ActorLogging with Stash {
+class Template(user: ActorRef, receiveTimeoutDuration: Duration = 1 hour) extends Timers with PersistentActor with ActorLogging with Stash {
+  context.setReceiveTimeout(receiveTimeoutDuration)
+
   import Template._
   import UserManagement.LandCommand
   import Land.{LandObjectTypesCommand, GetAllLands, LandEntity}
@@ -35,7 +37,7 @@ class Template(username: String, user: ActorRef) extends Timers with PersistentA
 
   var recoveredDefaultObjectTypes: Map[String, Map[String, List[ObjType]]] = Map()
 
-  override val persistenceId: String = s"[template-$username]"
+  override val persistenceId: String = "template"
 
   override def receiveCommand: Receive = Actor.emptyBehavior
 
@@ -62,15 +64,10 @@ class Template(username: String, user: ActorRef) extends Timers with PersistentA
   }
 
   def waitingForRequest(defaultObjectTypes: Map[String, Map[String, List[ObjType]]]): Receive = {
-    case GetObjectTypeOptions(locale) =>
+    case GetObjectTypeOptions(username, locale) =>
       user ! LandCommand(username, GetAllLands)
       unstashAll()
-      context.become(waitingForLands(sender, locale, defaultObjectTypes))
-
-    case GetObjectTypeOptions =>
-      user ! LandCommand(username, GetAllLands)
-      unstashAll()
-      context.become(waitingForLands(sender, "en", defaultObjectTypes))
+      context.become(waitingForLands(sender, username, locale, defaultObjectTypes))
 
     case RegisterNewLandTemplate(locale, name, objTypes) =>
       log.info(s"Registering new template $name for locale $locale")
@@ -123,9 +120,13 @@ class Template(username: String, user: ActorRef) extends Timers with PersistentA
     case msg =>
       log.warning(s"[$persistenceId] Stashing a message that can't be processed in waitingForRequest: $msg")
       stash()
+
+    case ReceiveTimeout =>
+      log.info(s"[$persistenceId] Actor idle, stopping...")
+      context.stop(self)
   }
 
-  def waitingForLands(client: ActorRef, locale: String, defaultObjectTypes:  Map[String, Map[String, List[ObjType]]]): Receive = {
+  def waitingForLands(client: ActorRef, username: String, locale: String, defaultObjectTypes:  Map[String, Map[String, List[ObjType]]]): Receive = {
     case lands: List[LandEntity] =>
       if (lands.isEmpty) {
         defaultObjectTypes.get(locale) match {
@@ -142,7 +143,7 @@ class Template(username: String, user: ActorRef) extends Timers with PersistentA
         unstashAll()
         context.become(waitingForObjectTypeResponses(client, locale, defaultObjectTypes, expectedResponses, Set()))
 
-        timers.startSingleTimer(TimerKey, Timeout, 1 second)
+        timers.startSingleTimer(TimerKey, TimerTimeout, 1 second)
       }
 
     case _: List[ObjectTypeEntity] =>
@@ -176,7 +177,7 @@ class Template(username: String, user: ActorRef) extends Timers with PersistentA
         context.become(waitingForObjectTypeResponses(client, locale, defaultObjectTypes, messagesToReceive, objectTypesFromLands))
       }
 
-    case Timeout =>
+    case TimerTimeout =>
       defaultObjectTypes.get(locale) match {
         case Some(map) => client ! Success(ObjectTypeOptionsResponse(map, fromLands))
         case None => client ! Success(ObjectTypeOptionsResponse(Map(), fromLands))
