@@ -1,6 +1,7 @@
 package actors
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Kill, PoisonPill, Props}
+import akka.pattern.StatusReply
 import akka.pattern.StatusReply._
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
@@ -77,13 +78,16 @@ class LandSpec
 
     "add a land correctly" in {
       landTestActor ! generateRandomAddLand()
-      expectMsg(Success())
+      val entity = expectMsgType[StatusReply[LandEntity]]
+      assert(entity.isSuccess)
+      assert(entity.getValue.id == 1)
     }
 
     "not be able to add two lands with the same name" in {
       val landName = "Some land name"
       landTestActor ! generateRandomAddLand(Some(landName))
-      expectMsg(Success())
+      val entity = expectMsgType[StatusReply[LandEntity]]
+      assert(entity.isSuccess)
 
       landTestActor ! generateRandomAddLand(Some(landName))
       expectMsg(Error(s"Land $landName already exists"))
@@ -92,7 +96,8 @@ class LandSpec
     "get a land registered before" in {
       val landName = random.nextString(10)
       landTestActor ! generateRandomAddLand(Some(landName))
-      expectMsg(Success())
+      val entity = expectMsgType[StatusReply[LandEntity]]
+      assert(entity.isSuccess)
       landTestActor ! GetLand(1)
       expectMsgType[Some[LandEntity]]
     }
@@ -138,7 +143,8 @@ class LandSpec
     "change only the description when receiving ChangeLandDescription" in {
       val landName = "landName"
       landTestActor ! generateRandomAddLand(Some(landName))
-      expectMsg(Success())
+      val entity = expectMsgType[StatusReply[LandEntity]]
+      assert(entity.isSuccess)
       landTestActor ! GetLand(1)
       val land = expectMsgType[Some[LandEntity]]
 
@@ -153,7 +159,8 @@ class LandSpec
     "change all fields except name & description when receiving ChangePolygon" in {
       val land = generateRandomAddLand()
       landTestActor ! land
-      expectMsg(Success())
+      val entity = expectMsgType[StatusReply[LandEntity]]
+      assert(entity.isSuccess)
 
       val changePolygon = ChangePolygon(1, random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextDouble(), random.nextString(20))
       landTestActor ! changePolygon

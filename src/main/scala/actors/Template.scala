@@ -9,20 +9,25 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 
 object Template {
-  def props(username: String, user: ActorRef): Props = Props(new Template(username, user))
+  def props(username: String, userManager: ActorRef): Props = Props(new Template(username, userManager))
 
   case object TimerKey
   case object Timeout
 
   trait Command
   case class GetObjectTypeOptions(locale: String = "en") extends Command
-  case class GetDefaultObjectTypeOptions(locale: String = "en") extends Command
+  case class RegisterNewLandTemplate(locale: String, name: String, objTypes: List[ObjType]) extends Command
+  case class ChangeLandTemplate(locale: String, name: String, objTypes: List[ObjType]) extends Command
+  case class DeleteLandTemplate(locale: String, name: String) extends Command
 
+  // events
   case class StoredDefaultObjectType(locale: String = "en", name: String, objTypes: List[ObjType])
+  case class DeletedDefaultObjectType(locale: String = "en", name: String)
 
+  // responses
   case class ObjectTypeOptionsResponse(default: Map[String, List[ObjType]], fromLands: Set[List[ObjType]])
 }
-class Template(username: String, user: ActorRef) extends PersistentActor with ActorLogging with Stash with Timers {
+class Template(username: String, user: ActorRef) extends Timers with PersistentActor with ActorLogging with Stash {
   import Template._
   import UserManagement.LandCommand
   import Land.{LandObjectTypesCommand, GetAllLands, LandEntity}
@@ -42,6 +47,16 @@ class Template(username: String, user: ActorRef) extends PersistentActor with Ac
           recoveredDefaultObjectTypes += locale -> (map + (name -> objTypes))
         case None => recoveredDefaultObjectTypes += locale -> Map(name -> objTypes)
       }
+
+    case DeletedDefaultObjectType(locale, name) =>
+      recoveredDefaultObjectTypes.get(locale) match {
+        case Some(map) =>
+          log.info(s"[$persistenceId] Recovering deletion: $name")
+          recoveredDefaultObjectTypes += locale -> (map - name)
+        case None =>
+          log.warning(s"[$persistenceId] No template found: $locale - $name")
+      }
+
     case RecoveryCompleted =>
       context.become(waitingForRequest(recoveredDefaultObjectTypes))
   }
@@ -51,8 +66,62 @@ class Template(username: String, user: ActorRef) extends PersistentActor with Ac
       user ! LandCommand(username, GetAllLands)
       unstashAll()
       context.become(waitingForLands(sender, locale, defaultObjectTypes))
+
+    case GetObjectTypeOptions =>
+      user ! LandCommand(username, GetAllLands)
+      unstashAll()
+      context.become(waitingForLands(sender, "en", defaultObjectTypes))
+
+    case RegisterNewLandTemplate(locale, name, objTypes) =>
+      log.info(s"Registering new template $name for locale $locale")
+      defaultObjectTypes.get(locale) match {
+        case Some(map) =>
+          map.get(name) match {
+            case Some(_) => sender ! Error(s"Template $name already exists for locale $locale")
+            case None =>
+              persist(StoredDefaultObjectType(locale, name, objTypes)) { event =>
+                val newDefaultObjectTypes = defaultObjectTypes + (event.locale -> (map + (event.name -> event.objTypes)))
+                sender ! Success()
+                context.become(waitingForRequest(newDefaultObjectTypes))
+              }
+          }
+        case None => persist(StoredDefaultObjectType(locale, name, objTypes)) { event =>
+          val newDefaultObjectTypes = defaultObjectTypes + (event.locale -> Map(event.name -> event.objTypes))
+          sender ! Success()
+          context.become(waitingForRequest(newDefaultObjectTypes))
+        }
+      }
+
+    case ChangeLandTemplate(locale, name, objTypes) =>
+      log.info(s"Changing existing template $name for locale $locale")
+      defaultObjectTypes.get(locale) match {
+        case Some(map) =>
+          map.get(name) match {
+            case Some(_) =>
+              persist(StoredDefaultObjectType(locale, name, objTypes)) { event =>
+                val newDefaultObjectTypes = defaultObjectTypes + (event.locale -> (map + (event.name -> event.objTypes)))
+                sender ! Success()
+                context.become(waitingForRequest(newDefaultObjectTypes))
+              }
+            case None => sender ! Error(s"Template $name for locale $locale does not exist")
+          }
+        case None => sender ! Error(s"Locale $locale does not exist")
+      }
+
+    case DeleteLandTemplate(locale, name) =>
+      defaultObjectTypes.get(locale) match {
+        case Some(map) =>
+          persist(DeletedDefaultObjectType(locale, name)) { event =>
+            val newDefaultObjectTypes = defaultObjectTypes + (event.locale -> (map - name))
+            sender ! Success()
+            context.become(waitingForRequest(newDefaultObjectTypes))
+          }
+        case None =>
+          sender ! Error(s"Locale $locale does not exist")
+      }
+
     case msg =>
-      log.warning(s"[$persistenceId] Stashing a message that can't be processed: $msg")
+      log.warning(s"[$persistenceId] Stashing a message that can't be processed in waitingForRequest: $msg")
       stash()
   }
 
@@ -79,7 +148,7 @@ class Template(username: String, user: ActorRef) extends PersistentActor with Ac
     case _: List[ObjectTypeEntity] =>
 
     case msg =>
-      log.warning(s"[$persistenceId] Stashing a message that can't be processed: $msg")
+      log.warning(s"[$persistenceId] Stashing a message that can't be processed in waitingForLands: $msg")
       stash()
   }
 
@@ -93,27 +162,30 @@ class Template(username: String, user: ActorRef) extends PersistentActor with Ac
     case list: List[ObjectTypeEntity] =>
       log.info(s"Received response from object type actor $list")
       val messagesToReceive = expectedMessages - 1
-      val objectTypesFromLands = fromLands + list.map(o => ObjType(o.name, o.color, o.icon))
-      if (messagesToReceive == 0) {
+      val mappedList = list.map(o => ObjType(o.name, o.color, o.icon))
+      val objectTypesFromLands = fromLands + mappedList
+      if (messagesToReceive <= 0) {
         timers.cancel(TimerKey)
         defaultObjectTypes.get(locale) match {
-          case Some(map) => Success(ObjectTypeOptionsResponse(map, objectTypesFromLands))
+          case Some(map) => client ! Success(ObjectTypeOptionsResponse(map, objectTypesFromLands))
           case None => client ! Success(ObjectTypeOptionsResponse(Map(), objectTypesFromLands))
         }
         unstashAll()
         context.become(waitingForRequest(defaultObjectTypes))
+      } else {
+        context.become(waitingForObjectTypeResponses(client, locale, defaultObjectTypes, messagesToReceive, objectTypesFromLands))
       }
 
     case Timeout =>
       defaultObjectTypes.get(locale) match {
-        case Some(map) => Success(ObjectTypeOptionsResponse(map, fromLands))
+        case Some(map) => client ! Success(ObjectTypeOptionsResponse(map, fromLands))
         case None => client ! Success(ObjectTypeOptionsResponse(Map(), fromLands))
       }
       unstashAll()
       context.become(waitingForRequest(defaultObjectTypes))
 
     case msg =>
-      log.warning(s"[$persistenceId] Stashing a message that can't be processed: $msg")
+      log.warning(s"[$persistenceId] Stashing a message that can't be processed in waitingForObjectTypeResponses: $msg")
       stash()
   }
 }

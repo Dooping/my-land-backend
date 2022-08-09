@@ -65,7 +65,7 @@ class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends 
         log.info(s"[$persistenceId] Adding land $land")
         persist(LandEntity(currentId, name, description, area, lat, lon, zoom, bearing, polygon)) { land =>
           context.become(landReceive(lands + (land.id -> land), currentId + 1, landObjectTypes))
-          sender ! Success()
+          sender ! Success(land)
         }
       }
 
