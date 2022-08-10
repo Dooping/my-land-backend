@@ -48,7 +48,7 @@ class AuthorizationRouteSpec extends AnyWordSpecLike
     "extract correctly the username from a token" in {
       val token = createToken(testUsername, 1)
       val extractedUsername = extractPayload(token)
-      assert(extractedUsername._1 == testUsername)
+      assert(extractedUsername.username == testUsername)
     }
   }
 

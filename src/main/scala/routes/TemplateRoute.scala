@@ -8,7 +8,7 @@ import akka.pattern.StatusReply.{Error, Success}
 import akka.pattern.{StatusReply, ask}
 import akka.util.Timeout
 import protocols.{ObjectTypeJsonProtocol, TemplateJsonProtocol}
-import utils.JwtHelper.admin
+import utils.JwtHelper.{Payload, admin}
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -20,10 +20,10 @@ object TemplateRoute extends ObjectTypeJsonProtocol with TemplateJsonProtocol {
 
   implicit val timeout: Timeout = Timeout(3 seconds)
 
-  def route(authenticator: ActorRef, template: ActorRef, authPayload: (String, Boolean)): Route = {
+  def route(template: ActorRef, authPayload: Payload): Route = {
     path("template") {
       (get & parameter(Symbol("locale").as[String].withDefault("en"))) { locale =>
-        val templateFuture = (template ? GetObjectTypeOptions(authPayload._1, locale))
+        val templateFuture = (template ? GetObjectTypeOptions(authPayload.username, locale))
           .mapTo[ObjectTypeOptionsResponse]
         complete(templateFuture)
       } ~

@@ -22,8 +22,8 @@ object MyLand extends App {
       UserManagementRoute.route(userManagerActor) ~
       handleRejections(RejectionHandlers.authorizationFailedHandler) {
         authenticateOAuth2("MyLand", jwtAuthenticator) { payload =>
-          LandRoute.route(userManagerActor, payload._1) ~
-          TemplateRoute.route(userManagerActor, templateActor, payload)
+          LandRoute.route(userManagerActor, payload.username) ~
+          TemplateRoute.route(templateActor, payload)
         }
       }
     }

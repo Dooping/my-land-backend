@@ -34,10 +34,8 @@ object JwtHelper extends JwtPayloadProtocol {
     case Failure(_) => true
   }
 
-  def extractPayload(token: String): (String, Boolean) = JwtSprayJson.decode(token, secretKey, Seq(algorithm)) match {
-    case Success(claims) =>
-      val payload = claims.content.parseJson.convertTo[Payload]
-      (payload.username, payload.isAdmin)
+  def extractPayload(token: String): Payload = JwtSprayJson.decode(token, secretKey, Seq(algorithm)) match {
+    case Success(claims) => claims.content.parseJson.convertTo[Payload]
     case _ => throw new RuntimeException("jwt token invalid")
   }
 
@@ -49,7 +47,7 @@ object JwtHelper extends JwtPayloadProtocol {
       JwtOptions(expiration = false)
     )
 
-  def jwtAuthenticator(credentials: Credentials): Option[(String, Boolean)] = credentials match {
+  def jwtAuthenticator(credentials: Credentials): Option[Payload] = credentials match {
     case Credentials.Provided(token) =>
       if (isTokenValid(token) && !isTokenExpired(token))
         Some(extractPayload(token))
@@ -57,8 +55,8 @@ object JwtHelper extends JwtPayloadProtocol {
     case Credentials.Missing => None
   }
 
-  def admin(authPayload: (String, Boolean)): Directive0 = authPayload match {
-    case (_, true)  => pass
-    case (_, false) => Directives.reject(AuthorizationFailedRejection)
+  def admin(authPayload: Payload): Directive0 = authPayload match {
+    case Payload(_, true)  => pass
+    case Payload(_, false) => Directives.reject(AuthorizationFailedRejection)
   }
 }
