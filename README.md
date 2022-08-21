@@ -33,3 +33,8 @@ Endpoint to login the user through basic authentication.
 
 Returns a JWT token in the header `Access-Token`.
 The token is valid for 30 days.
+
+## Authorization
+All requests (besides login and register) must send a valid JWT token to the server.
+Either in the header `Authorization` as: `Bearer {JWT-token}`.
+Or in the parameter `access_token`.
