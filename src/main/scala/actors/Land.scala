@@ -1,6 +1,6 @@
 package actors
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, ReceiveTimeout, Terminated}
+import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props, ReceiveTimeout, Terminated}
 import akka.pattern.StatusReply._
 import akka.persistence.{PersistentActor, RecoveryCompleted}
 
@@ -18,6 +18,7 @@ object Land {
   case class ChangePolygon(id: Int, area: Double, lat: Double, lon: Double, zoom: Double, bearing: Double, polygon: String) extends Command
   case class DeleteLand(id: Int) extends Command
   case class LandObjectTypesCommand(landId: Int, cmd: ObjectType.Command) extends Command
+  case class LandObjectsCommand(landId: Int, cmd: ObjectManager.Command) extends Command
 
   trait Event
   case class LandEntity(id: Int, name: String, description: String, area: Double, lat: Double, lon: Double, zoom: Double, bearing: Double, polygon: String) extends Event
@@ -43,13 +44,14 @@ class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends 
       log.info(s"[$persistenceId] Restoring land: $land")
       recoveredLands += id -> land
       recoveredId += 1
-    case RecoveryCompleted => context.become(landReceive(recoveredLands, recoveredId, Map()))
+    case RecoveryCompleted => context.become(landReceive(recoveredLands, recoveredId, Map(), Map()))
   }
 
   def landReceive(
        lands: Map[Int, LandEntity],
        currentId: Int,
-       landObjectTypes: Map[Int, ActorRef]): Receive = {
+       landObjectTypes: Map[Int, ActorRef],
+       landObjects: Map[Int, ActorRef]): Receive = {
     case GetAllLands =>
       sender ! lands.values.toList
 
@@ -64,7 +66,7 @@ class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends 
       } else {
         log.info(s"[$persistenceId] Adding land $land")
         persist(LandEntity(currentId, name, description, area, lat, lon, zoom, bearing, polygon)) { land =>
-          context.become(landReceive(lands + (land.id -> land), currentId + 1, landObjectTypes))
+          context.become(landReceive(lands + (land.id -> land), currentId + 1, landObjectTypes, landObjects))
           sender ! Success(land)
         }
       }
@@ -75,7 +77,7 @@ class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends 
           log.info(s"[$persistenceId] Changing $id description to: $description")
           val newLand = land.copy(description = description)
           persist(newLand) { land =>
-            context.become(landReceive(lands + (land.id -> land), currentId, landObjectTypes))
+            context.become(landReceive(lands + (land.id -> land), currentId, landObjectTypes, landObjects))
             sender ! Success(land)
           }
         case None =>
@@ -89,7 +91,7 @@ class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends 
           log.info(s"[$persistenceId] Changing $id polygon to: $cmd")
           val newLand = LandEntity(id, land.name, land.description, area, lat, lon, zoom, bearing, polygon)
           persist(newLand) { land =>
-            context.become(landReceive(lands + (land.id -> land), currentId, landObjectTypes))
+            context.become(landReceive(lands + (land.id -> land), currentId, landObjectTypes, landObjects))
             sender ! Success(land)
           }
         case None =>
@@ -102,7 +104,9 @@ class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends 
         case Some(_) =>
           log.info(s"[$persistenceId] Deleting land with $id")
           persist(DeletedLand(id)) { event =>
-            context.become(landReceive(lands - event.id, currentId, landObjectTypes))
+            landObjectTypes.get(id).foreach(_ ! PoisonPill)
+            landObjects.get(id).foreach(_ ! PoisonPill)
+            context.become(landReceive(lands - event.id, currentId, landObjectTypes - id, landObjects - id))
             sender ! Success()
           }
         case None =>
@@ -122,15 +126,38 @@ class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends 
             log.info(s"[$persistenceId] Creating object types actor for land ${land.name}")
             val actor = context.actorOf(ObjectType.props(username, id), s"object-type-$username-$id")
             context.watch(actor)
-            context.become(landReceive(lands, currentId, landObjectTypes + (id -> actor)))
+            context.become(landReceive(lands, currentId, landObjectTypes + (id -> actor), landObjects))
             actor
           })
           objTypesActor.forward(cmd)
 
         case None => sender ! Error(s"Land with ID $id does not exist")
       }
+
+    case LandObjectTypesCommand(id, cmd) =>
+      lands.get(id) match {
+        case Some(land) =>
+          val objectsActor: ActorRef = landObjects.getOrElse(id, {
+            log.info(s"[$persistenceId] Creating objects actor for land ${land.name}")
+            val actor = context.actorOf(ObjectManager.props(username, id), s"objects-$username-$id")
+            context.watch(actor)
+            context.become(landReceive(lands, currentId, landObjectTypes, landObjects + (id -> actor)))
+            actor
+          })
+          objectsActor.forward(cmd)
+
+        case None => sender ! Error(s"Land with ID $id does not exist")
+      }
+
     case Terminated(actorRef) =>
-      context.become(landReceive(lands, currentId, landObjectTypes.filterNot(_._2 == actorRef)))
+      context.become(
+        landReceive(
+          lands,
+          currentId,
+          landObjectTypes.filterNot(_._2 == actorRef),
+          landObjects.filterNot(_._2 == actorRef)
+        )
+      )
       log.info(s"[$persistenceId] $actorRef was removed from active actors")
 
   }
