@@ -16,6 +16,7 @@ object ObjectManager {
 
   // Commands
   trait Command
+  case object GetObjects extends Command
   case class AddLandObject(lat: Double, lon: Double, status: String, typeId: Int) extends Command
   case class DeleteLandObject(id: Int) extends Command
   case class ChangeLandObject(id: Int, lat: Double, lon: Double, status: String, typeId: Int) extends Command
@@ -48,6 +49,9 @@ class ObjectManager(username: String, landId: Int, receiveTimeoutDuration: Durat
   }
 
   override def receiveCommand: Receive = {
+    case GetObjects =>
+      sender ! objects.values.toList
+
     case cmd @ AddLandObject(lat, lon, status, typeId) =>
       log.info(s"Adding object: $cmd")
       persist(LandObject(currentId, lat, lon, status, typeId)) { event =>
@@ -83,6 +87,8 @@ class ObjectManager(username: String, landId: Int, receiveTimeoutDuration: Durat
         }
         unstashAll()
         context.become(waitingForDeletes(objectsToDelete.size, sender))
+      } else {
+        sender ! Success()
       }
 
     case ReceiveTimeout =>
