@@ -53,7 +53,7 @@ class ObjectManager(username: String, landId: Int, receiveTimeoutDuration: Durat
       sender ! objects.values.toList
 
     case cmd @ AddLandObject(lat, lon, status, typeId) =>
-      log.info(s"Adding object: $cmd")
+      log.info(s"[$persistenceId] Adding object: $cmd")
       persist(LandObject(currentId, lat, lon, status, typeId)) { event =>
         objects += event.id -> event
         currentId += 1
@@ -61,19 +61,19 @@ class ObjectManager(username: String, landId: Int, receiveTimeoutDuration: Durat
       }
 
     case DeleteLandObject(id) if objects.contains(id) =>
-      log.info(s"Deleting object: $id")
+      log.info(s"[$persistenceId] Deleting object: $id")
       persist(DeletedLandObject(id)) { event =>
         objects -= event.id
         sender ! Success()
       }
 
     case DeleteLandObject(id) =>
-      log.warning(s"Tried to delete a non existing object: $id")
+      log.warning(s"[$persistenceId] Tried to delete a non existing object: $id")
       sender ! Error(s"Object $id does not exist")
 
     case cmd @ ChangeLandObject(id, lat, lon, status, typeId) if objects.contains(id) =>
       objects.get(id).foreach { _ =>
-        log.info(s"Changing object $id to $cmd")
+        log.info(s"[$persistenceId] Changing object $id to $cmd")
         persist(LandObject(id, lat, lon, status, typeId)) { event =>
           objects += event.id -> event
           sender ! Success(event)
@@ -81,13 +81,13 @@ class ObjectManager(username: String, landId: Int, receiveTimeoutDuration: Durat
       }
 
     case ChangeLandObject(id, _, _, _, _) =>
-      log.warning(s"Tried to modify a non existing object: $id")
+      log.warning(s"[$persistenceId] Tried to modify a non existing object: $id")
       sender ! Error(s"Object $id does not exist")
 
 
     case DeleteByType(typeId) =>
-      log.info(s"Deleting all objects of type $typeId")
-      val objectsToDelete = objects.values.filterNot(_.typeId == typeId).map(obj => DeletedLandObject(obj.id))
+      log.info(s"[$persistenceId] Deleting all objects of type $typeId")
+      val objectsToDelete = objects.values.filter(_.typeId == typeId).map(obj => DeletedLandObject(obj.id))
       if (objectsToDelete.nonEmpty) {
         timers.startSingleTimer(TimerKey, TimerTimeout, 1 second)
         persistAll(objectsToDelete.toSeq) { event =>
