@@ -60,14 +60,18 @@ class ObjectManager(username: String, landId: Int, receiveTimeoutDuration: Durat
         sender ! Success(event)
       }
 
-    case DeleteLandObject(id) =>
+    case DeleteLandObject(id) if objects.contains(id) =>
       log.info(s"Deleting object: $id")
       persist(DeletedLandObject(id)) { event =>
         objects -= event.id
         sender ! Success()
       }
 
-    case cmd @ ChangeLandObject(id, lat, lon, status, typeId) =>
+    case DeleteLandObject(id) =>
+      log.warning(s"Tried to delete a non existing object: $id")
+      sender ! Error(s"Object $id does not exist")
+
+    case cmd @ ChangeLandObject(id, lat, lon, status, typeId) if objects.contains(id) =>
       objects.get(id).foreach { _ =>
         log.info(s"Changing object $id to $cmd")
         persist(LandObject(id, lat, lon, status, typeId)) { event =>
@@ -75,6 +79,11 @@ class ObjectManager(username: String, landId: Int, receiveTimeoutDuration: Durat
           sender ! Success(event)
         }
       }
+
+    case ChangeLandObject(id, _, _, _, _) =>
+      log.warning(s"Tried to modify a non existing object: $id")
+      sender ! Error(s"Object $id does not exist")
+
 
     case DeleteByType(typeId) =>
       log.info(s"Deleting all objects of type $typeId")
