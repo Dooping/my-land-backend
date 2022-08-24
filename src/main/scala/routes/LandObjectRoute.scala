@@ -2,7 +2,7 @@ package routes
 
 import akka.actor.ActorRef
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
-import akka.http.scaladsl.server.Directives._
+import akka.http.scaladsl.server.Directives.{entity, _}
 import akka.http.scaladsl.server.Route
 import akka.pattern.StatusReply._
 import akka.pattern.{StatusReply, ask}
@@ -23,21 +23,31 @@ object LandObjectRoute extends ObjectManagerJsonProtocol {
   implicit val timeout: Timeout = Timeout(3 seconds)
 
   def route(authenticator: ActorRef, username: String, landId: Int): Route = {
-    path("object") {
-      get {
-        val getObjectsFuture = (authenticator ? LandCommand(username, LandObjectsCommand(landId, GetObjects)))
-          .mapTo[List[LandObject]]
-        complete(getObjectsFuture)
-      } ~
-      (post & entity(as[AddLandObject])) { command =>
-        val postObjectsFuture = (authenticator ? LandCommand(username, LandObjectsCommand(landId, command)))
-          .mapTo[StatusReply[LandObject]]
-          .map {
-            case Success(entity: LandObject) =>
-              HttpResponse(StatusCodes.Created, entity = HttpEntity(ContentTypes.`application/json`, entity.toJson.prettyPrint))
-            case Error(reason) => HttpResponse(StatusCodes.BadRequest, entity = HttpEntity(reason.getMessage))
-          }
-        complete(postObjectsFuture)
+    pathPrefix("object") {
+      pathEndOrSingleSlash {
+        get {
+          val getObjectsFuture = (authenticator ? LandCommand(username, LandObjectsCommand(landId, GetObjects)))
+            .mapTo[List[LandObject]]
+          complete(getObjectsFuture)
+        } ~
+        (post & entity(as[AddLandObject])) { command =>
+          val postObjectsFuture = (authenticator ? LandCommand(username, LandObjectsCommand(landId, command)))
+            .mapTo[StatusReply[LandObject]]
+            .map {
+              case Success(entity: LandObject) =>
+                HttpResponse(StatusCodes.Created, entity = HttpEntity(ContentTypes.`application/json`, entity.toJson.prettyPrint))
+              case Error(reason) => HttpResponse(StatusCodes.BadRequest, entity = HttpEntity(reason.getMessage))
+            }
+          complete(postObjectsFuture)
+        } ~
+        (delete & parameter(Symbol("type").as[Int])) { typeId =>
+          val deleteObjectsFuture = (authenticator ? LandCommand(username, LandObjectsCommand(landId, DeleteByType(typeId))))
+            .map {
+              case Success(_) => HttpResponse(StatusCodes.OK)
+              case Error(reason) => HttpResponse(StatusCodes.BadRequest, entity = HttpEntity(reason.getMessage))
+            }
+          complete(deleteObjectsFuture)
+        }
       } ~
       path(IntNumber) { id =>
         (put & entity(as[AddLandObject])) { command =>
@@ -59,14 +69,6 @@ object LandObjectRoute extends ObjectManagerJsonProtocol {
             }
           complete(deleteObjectsFuture)
         }
-      } ~
-      (delete & parameter(Symbol("type").as[Int])) { typeId =>
-        val deleteObjectsFuture = (authenticator ? LandCommand(username, LandObjectsCommand(landId, DeleteByType(typeId))))
-          .map {
-            case Success(_) => HttpResponse(StatusCodes.OK)
-            case Error(reason) => HttpResponse(StatusCodes.BadRequest, entity = HttpEntity(reason.getMessage))
-          }
-        complete(deleteObjectsFuture)
       }
     }
   }

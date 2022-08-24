@@ -33,6 +33,14 @@ object ObjectManagerSpec {
     } yield ChangeLandObject tupled obj.+:(id)
     changeLandObjectGen.sample.get
   }
+  def genLandObjectEntity: LandObject = {
+    val landObjectGen = for {
+      id <- Gen.choose(1, 1000)
+      obj <- genLandObject()
+    } yield LandObject tupled obj.+:(id)
+    landObjectGen.sample.get
+  }
+
 }
 class ObjectManagerSpec
   extends TestKit(ActorSystem("ObjectManagerPackage", PersistenceTestKitPlugin.config.withFallback(ConfigFactory.load().getConfig("interceptingLogMessages"))))
