@@ -134,7 +134,7 @@ class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends 
         case None => sender ! Error(s"Land with ID $id does not exist")
       }
 
-    case LandObjectTypesCommand(id, cmd) =>
+    case LandObjectsCommand(id, cmd) =>
       lands.get(id) match {
         case Some(land) =>
           val objectsActor: ActorRef = landObjects.getOrElse(id, {
