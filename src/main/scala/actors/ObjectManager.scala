@@ -1,8 +1,8 @@
 package actors
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, ReceiveTimeout, Stash, Timers}
+import akka.actor.{ActorLogging, ActorRef, Props, ReceiveTimeout, Stash, Timers}
 import akka.pattern.StatusReply._
-import akka.persistence.{PersistentActor, RecoveryCompleted}
+import akka.persistence.PersistentActor
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -21,6 +21,7 @@ object ObjectManager {
   case class DeleteLandObject(id: Int) extends Command
   case class ChangeLandObject(id: Int, lat: Double, lon: Double, status: String, typeId: Int) extends Command
   case class DeleteByType(typeId: Int) extends Command
+  case object Destroy extends Command
 
   // Events
   case class LandObject(id: Int, lat: Double, lon: Double, status: String, typeId: Int)
@@ -102,6 +103,11 @@ class ObjectManager(username: String, landId: Int, receiveTimeoutDuration: Durat
 
     case ReceiveTimeout =>
       log.info(s"[$persistenceId] Actor idle, stopping...")
+      context.stop(self)
+
+    case Destroy =>
+      log.info(s"[$persistenceId] Destroying actor and all data")
+      deleteMessages(lastSequenceNr)
       context.stop(self)
 
     case _ => stash()

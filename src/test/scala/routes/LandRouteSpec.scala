@@ -147,5 +147,17 @@ class LandRouteSpec extends AnyWordSpecLike
         }
       }
     }
+
+    "delete an existing land" in {
+      val testLandId = 1
+      testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
+        case DeleteLand(id) =>
+          sender ! Success()
+          TestActor.KeepRunning
+      })
+      Delete(s"/land/$testLandId") ~> LandRoute.route(userManagement, testUsername) ~> check {
+        status shouldBe StatusCodes.OK
+      }
+    }
   }
 }

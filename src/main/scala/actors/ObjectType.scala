@@ -19,6 +19,7 @@ object ObjectType {
   case object GetObjectTypes extends Command
   case class ChangeObjectType(id: Int, objType: ObjType) extends Command
   case class DeleteObjectType(id: Int) extends Command
+  case object Destroy extends Command
 
   trait Event
   case class ObjectTypeEntity(id: Int, name: String, color: String, icon: String, createdAt: Date, modifiedAt: Date) extends Event
@@ -101,6 +102,10 @@ class ObjectType(username: String, land: Int, receiveTimeoutDuration: Duration =
           sender ! Error(s"No object type found with id $id")
       }
 
+    case Destroy =>
+      log.info(s"[$persistenceId] Destroying actor and all data")
+      deleteMessages(lastSequenceNr)
+      context.stop(self)
 
     case ReceiveTimeout =>
       log.info(s"[$persistenceId] Actor idle, stopping...")

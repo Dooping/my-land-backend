@@ -60,6 +60,12 @@ object LandRoute extends LandJsonProtocol {
             .map(mapStatusReplyToHttpResponse)
           complete(patchPolygon)
         }
+      } ~
+      (delete & path(IntNumber)) { id =>
+        val deleteLandFuture = (authenticator ? LandCommand(username, DeleteLand(id)))
+          .mapTo[StatusReply[LandEntity]]
+          .map(mapStatusReplyToHttpResponse)
+        complete(deleteLandFuture)
       }
     }
   }

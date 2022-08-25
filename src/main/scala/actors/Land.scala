@@ -102,11 +102,17 @@ class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends 
     case DeleteLand(id) =>
       lands.get(id) match {
         case Some(_) =>
-          log.info(s"[$persistenceId] Deleting land with $id")
+          log.info(s"[$persistenceId] Deleting land $id")
           persist(DeletedLand(id)) { event =>
-            landObjectTypes.get(id).foreach(_ ! PoisonPill)
-            landObjects.get(id).foreach(_ ! PoisonPill)
-            context.become(landReceive(lands - event.id, currentId, landObjectTypes - id, landObjects - id))
+            landObjects
+              .get(id)
+              .orElse(Some(context.actorOf(ObjectManager.props(username, id), s"objects-$username-$id")))
+              .foreach(_ ! ObjectManager.Destroy)
+            landObjectTypes
+              .get(id)
+              .orElse(Some(context.actorOf(ObjectType.props(username, id), s"object-type-$username-$id")))
+              .foreach(_ ! ObjectType.Destroy)
+            context.become(landReceive(lands - event.id, currentId, landObjectTypes, landObjects))
             sender ! Success()
           }
         case None =>

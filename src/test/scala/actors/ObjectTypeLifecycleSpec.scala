@@ -1,6 +1,7 @@
 package actors
 
-import akka.actor.{Actor, ActorRef, ActorSystem, PoisonPill, Props, ReceiveTimeout}
+import akka.actor.{Actor, ActorRef, ActorSystem, PoisonPill, ReceiveTimeout}
+import akka.pattern.StatusReply.Success
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
 import akka.testkit.{EventFilter, ImplicitSender, TestKit}
@@ -79,6 +80,19 @@ class ObjectTypeLifecycleSpec
         Thread.sleep(100)
         landActor ! LandObjectTypesCommand(landId, GetObjectTypes)
         expectMsgType[List[ObjectTypeEntity]]
+      }
+    }
+
+
+    "signal the corresponding ObjectManager when a land is deleted" in {
+      val landActor = system.actorOf(Land.props(username))
+      val land = generateRandomAddLand()
+      landActor ! land
+      landActor ! LandObjectTypesCommand(1, GetObjectTypes)
+      receiveN(2)
+      EventFilter.info(s"[object-types-$username-1] Destroying actor and all data", occurrences = 1) intercept {
+        landActor ! DeleteLand(1)
+        expectMsg(Success())
       }
     }
 

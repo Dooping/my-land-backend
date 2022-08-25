@@ -172,6 +172,18 @@ class LandSpec
       }
     }
 
+    "delete a land" in {
+      val land = generateRandomAddLand()
+      landTestActor ! land
+      receiveN(1)
+
+      landTestActor ! DeleteLand(1)
+      expectMsg(Success())
+
+      landTestActor ! GetLand(1)
+      expectMsg(None)
+    }
+
     "timeout after the specified inactivity duration" in {
       val landTestActor = system.actorOf(Props(new Land("test8", 100 milliseconds)))
       watch(landTestActor)

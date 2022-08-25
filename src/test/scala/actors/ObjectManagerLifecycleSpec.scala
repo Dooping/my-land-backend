@@ -1,6 +1,7 @@
 package actors
 
 import akka.actor.{ActorSystem, Props}
+import akka.pattern.StatusReply.Success
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
 import akka.testkit.{EventFilter, ImplicitSender, TestKit, TestProbe}
@@ -65,6 +66,18 @@ class ObjectManagerLifecycleSpec
         val objectManagerActor = landProbe.childActorOf(Props(new ObjectManager(testUsername, 1, 100 millis)))
         landProbe.watch(objectManagerActor)
         landProbe.expectTerminated(objectManagerActor, 500 millis)
+      }
+    }
+
+    "signal the corresponding ObjectManager when a land is deleted" in {
+      val landActor = system.actorOf(Land.props(testUsername))
+      val land = generateRandomAddLand()
+      landActor ! land
+      landActor ! LandObjectsCommand(1, GetObjects)
+      receiveN(2)
+      EventFilter.info(s"[object-manager-$testUsername-1] Destroying actor and all data", occurrences = 1) intercept {
+        landActor ! DeleteLand(1)
+        expectMsg(Success())
       }
     }
   }
