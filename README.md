@@ -144,8 +144,7 @@ _Request must have a valid token_
 Requires a payload with the new object
 ```json
 {
-  "lat": 12.34,
-  "lon": 12.34,
+  "element": "Some GeoJSON",
   "status": "Some status",
   "typeId": 1
 }
@@ -160,8 +159,7 @@ _Request must have a valid token_
 Requires a payload with the new data
 ```json
 {
-  "lat": 12.34,
-  "lon": 12.34,
+  "element": "Some GeoJSON",
   "status": "Some status",
   "typeId": 1
 }

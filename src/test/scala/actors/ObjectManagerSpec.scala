@@ -21,11 +21,10 @@ object ObjectManagerSpec {
 
   def genTypeId: Gen[Int] = Gen.choose(1, 5)
   private def genLandObject(typeId: Option[Int] = None) = for {
-    lat <- Gen.double
-    lon <- Gen.double
+    element <- Gen.alphaStr
     status <- Gen.alphaStr
     typeId <- typeId.map(Gen.const).getOrElse(genTypeId)
-  } yield (lat, lon, status, typeId)
+  } yield (element, status, typeId)
   def genAddLandObject(typeId: Option[Int] = None): AddLandObject = AddLandObject tupled genLandObject(typeId).sample.get
   def genChangeLandObject(id: Option[Int] = None): ChangeLandObject = {
     val changeLandObjectGen = for {
@@ -80,7 +79,7 @@ class ObjectManagerSpec
       val addLandObject = genAddLandObject()
       objectManagerActor ! addLandObject
       expectMsgPF() {
-        case Success(LandObject(1, addLandObject.lat, addLandObject.lon, addLandObject.status, addLandObject.typeId, _, _)) =>
+        case Success(LandObject(1, addLandObject.element, addLandObject.status, addLandObject.typeId, _, _)) =>
       }
     }
 
@@ -93,7 +92,7 @@ class ObjectManagerSpec
       val anotherAddLandObject = genAddLandObject()
       objectManagerActor ! anotherAddLandObject
       expectMsgPF() {
-        case Success(LandObject(2, anotherAddLandObject.lat, anotherAddLandObject.lon, anotherAddLandObject.status, anotherAddLandObject.typeId, _, _)) =>
+        case Success(LandObject(2, anotherAddLandObject.element, anotherAddLandObject.status, anotherAddLandObject.typeId, _, _)) =>
       }
     }
   }
@@ -126,7 +125,7 @@ class ObjectManagerSpec
       val changeLandObject = genChangeLandObject(Some(1))
       objectManagerActor ! changeLandObject
       expectMsgPF() {
-        case Success(LandObject(changeLandObject.id, changeLandObject.lat, changeLandObject.lon, changeLandObject.status, changeLandObject.typeId, _, _)) =>
+        case Success(LandObject(changeLandObject.id, changeLandObject.element, changeLandObject.status, changeLandObject.typeId, _, _)) =>
       }
     }
 

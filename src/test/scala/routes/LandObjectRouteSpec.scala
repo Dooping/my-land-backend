@@ -47,15 +47,14 @@ class LandObjectRouteSpec extends AnyWordSpecLike
     "add a new object" in {
       val randomObject = genAddLandObject()
       testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
-        case LandObjectsCommand(_, AddLandObject(lat, lon, status, typeId)) =>
-          sender ! Success(LandObject(1, lat, lon, status, typeId, new Date, new Date))
+        case LandObjectsCommand(_, AddLandObject(element, status, typeId)) =>
+          sender ! Success(LandObject(1, element, status, typeId, new Date, new Date))
           TestActor.KeepRunning
       })
       Post("/object", randomObject) ~> LandObjectRoute.route(userManagement, testUsername, testLandId) ~> check {
         val obj = responseAs[LandObject]
         status shouldBe StatusCodes.Created
-        obj.lat shouldBe randomObject.lat
-        obj.lon shouldBe randomObject.lon
+        obj.element shouldBe randomObject.element
         obj.status shouldBe randomObject.status
         obj.typeId shouldBe randomObject.typeId
       }
@@ -80,16 +79,15 @@ class LandObjectRouteSpec extends AnyWordSpecLike
     "change existing object" in {
       val payload = genAddLandObject()
       testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
-        case LandObjectsCommand(_, ChangeLandObject(id, lat, lon, status, typeId)) =>
-          sender ! Success(LandObject(id, lat, lon, status, typeId, new Date, new Date))
+        case LandObjectsCommand(_, ChangeLandObject(id, element, status, typeId)) =>
+          sender ! Success(LandObject(id, element, status, typeId, new Date, new Date))
           TestActor.KeepRunning
       })
       Put("/object/1", payload) ~> LandObjectRoute.route(userManagement, testUsername, testLandId) ~> check {
         val obj = responseAs[LandObject]
         status shouldBe StatusCodes.OK
         obj.id shouldBe 1
-        obj.lat shouldBe payload.lat
-        obj.lon shouldBe payload.lon
+        obj.element shouldBe payload.element
         obj.status shouldBe payload.status
         obj.typeId shouldBe payload.typeId
       }

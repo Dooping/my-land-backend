@@ -18,14 +18,14 @@ object ObjectManager {
   // Commands
   trait Command
   case object GetObjects extends Command
-  case class AddLandObject(lat: Double, lon: Double, status: String, typeId: Int) extends Command
+  case class AddLandObject(element: String, status: String, typeId: Int) extends Command
   case class DeleteLandObject(id: Int) extends Command
-  case class ChangeLandObject(id: Int, lat: Double, lon: Double, status: String, typeId: Int) extends Command
+  case class ChangeLandObject(id: Int, element: String, status: String, typeId: Int) extends Command
   case class DeleteByType(typeId: Int) extends Command
   case object Destroy extends Command
 
   // Events
-  case class LandObject(id: Int, lat: Double, lon: Double, status: String, typeId: Int, modifiedAt: Date, createdAt: Date)
+  case class LandObject(id: Int, element: String, status: String, typeId: Int, modifiedAt: Date, createdAt: Date)
   case class DeletedLandObject(id: Int)
 
 }
@@ -43,7 +43,7 @@ class ObjectManager(username: String, landId: Int, receiveTimeoutDuration: Durat
   override def persistenceId: String = s"object-manager-$username-$landId"
 
   override def receiveRecover: Receive = {
-    case obj @ LandObject(id, _, _, _, _, _, _) =>
+    case obj @ LandObject(id, _, _, _, _, _) =>
       objects += id -> obj
       currentId += 1
     case DeletedLandObject(id) =>
@@ -54,9 +54,9 @@ class ObjectManager(username: String, landId: Int, receiveTimeoutDuration: Durat
     case GetObjects =>
       sender ! objects.values.toList
 
-    case cmd @ AddLandObject(lat, lon, status, typeId) =>
+    case cmd @ AddLandObject(element, status, typeId) =>
       log.info(s"[$persistenceId] Adding object: $cmd")
-      persist(LandObject(currentId, lat, lon, status, typeId, new Date, new Date)) { event =>
+      persist(LandObject(currentId, element, status, typeId, new Date, new Date)) { event =>
         objects += event.id -> event
         currentId += 1
         sender ! Success(event)
@@ -73,16 +73,16 @@ class ObjectManager(username: String, landId: Int, receiveTimeoutDuration: Durat
       log.warning(s"[$persistenceId] Tried to delete a non existing object: $id")
       sender ! Error(s"Object $id does not exist")
 
-    case cmd @ ChangeLandObject(id, lat, lon, status, typeId) if objects.contains(id) =>
+    case cmd @ ChangeLandObject(id, element, status, typeId) if objects.contains(id) =>
       objects.get(id).foreach { oldObject =>
         log.info(s"[$persistenceId] Changing object $id to $cmd")
-        persist(LandObject(id, lat, lon, status, typeId, new Date, oldObject.createdAt)) { event =>
+        persist(LandObject(id, element, status, typeId, new Date, oldObject.createdAt)) { event =>
           objects += event.id -> event
           sender ! Success(event)
         }
       }
 
-    case ChangeLandObject(id, _, _, _, _) =>
+    case ChangeLandObject(id, _, _, _) =>
       log.warning(s"[$persistenceId] Tried to modify a non existing object: $id")
       sender ! Error(s"Object $id does not exist")
 

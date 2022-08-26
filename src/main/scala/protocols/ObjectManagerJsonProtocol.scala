@@ -8,7 +8,7 @@ import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 trait ObjectManagerJsonProtocol extends SprayJsonSupport with DefaultJsonProtocol {
   import actors.ObjectManager._
 
-  implicit val landObjectFormat: RootJsonFormat[LandObject] = jsonFormat7(LandObject)
-  implicit val changeObjectFormat: RootJsonFormat[ChangeLandObject] = jsonFormat5(ChangeLandObject)
-  implicit val addObjectFormat: RootJsonFormat[AddLandObject] = jsonFormat4(AddLandObject)
+  implicit val landObjectFormat: RootJsonFormat[LandObject] = jsonFormat6(LandObject)
+  implicit val changeObjectFormat: RootJsonFormat[ChangeLandObject] = jsonFormat4(ChangeLandObject)
+  implicit val addObjectFormat: RootJsonFormat[AddLandObject] = jsonFormat3(AddLandObject)
 }
