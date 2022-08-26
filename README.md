@@ -8,10 +8,10 @@ Server side of My Land App
 
 ### User
 
-| Path               | Method | Description          |
-|--------------------|--------|----------------------|
-| [/user](#register) | POST   | Registers a new user |
-| [/user ](#login)   | GET    | Logs the user in     |
+| Path                 | Method | Description          |
+|----------------------|--------|----------------------|
+| [`/user`](#register) | POST   | Registers a new user |
+| [`/user` ](#login)   | GET    | Logs the user in     |
 
 #### Register
 `POST /user`
@@ -41,16 +41,16 @@ Or in the parameter `access_token`.
 
 ### Land
 
-| Path                                      | Method | Parameters  | Description              |
-|-------------------------------------------|--------|-------------|--------------------------|
-| [/land](#get-lands)                       | GET    |             | Gets all lands from user |
-| [/land](#create-land)                     | POST   |             | Creates a new land       |
-| [/land](#modify-land)                     | PATCH  |             | Patches a land           |
-| [/land](#get-land)                        | GET    | id={landId} | Fetches a single land    |
-| [/land/{landId}](#get-land)               | GET    |             | Fetches a single land    |
-| [/land/{landId}](#delete-land)            | DELETE |             | Deletes a land           |
-| [/land/{landId}/object](#land-object)     |        |             | Land objects endpoints   |
-| [/land/{landId}/objectType](#object-type) |        |             | Object type endpoints    |
+| Path                                        | Method | Parameters    | Description              |
+|---------------------------------------------|--------|---------------|--------------------------|
+| [`/land`](#get-lands)                       | GET    |               | Gets all lands from user |
+| [`/land`](#create-land)                     | POST   |               | Creates a new land       |
+| [`/land`](#modify-land)                     | PATCH  |               | Patches a land           |
+| [`/land`](#get-land)                        | GET    | `id={landId}` | Fetches a single land    |
+| [`/land/{landId}`](#get-land)               | GET    |               | Fetches a single land    |
+| [`/land/{landId}`](#delete-land)            | DELETE |               | Deletes a land           |
+| [`/land/{landId}/object`](#land-object)     |        |               | Land objects endpoints   |
+| [`/land/{landId}/objectType`](#object-type) |        |               | Object type endpoints    |
 
 
 #### Get lands
@@ -121,5 +121,66 @@ Deletes a single land
 _Request must have a valid token_
 
 ### Land object
+
+| Path                                                | Method | Parameters    | Description                   |
+|-----------------------------------------------------|--------|---------------|-------------------------------|
+| [`/land/{landId}/object`](#get-land-objects)        | GET    |               | Gets all objects from land    |
+| [`/land/{landId}/object`](#create-land-object)      | POST   |               | Creates a new object          |
+| [`/land/{landId}/object`](#delete-objects-by-type)  | DELETE | `type={id}`   | Deletes all objects of a type |
+| [`/land/{landId}/object/{id}`](#modify-land-object) | PUT    |               | Edits an object               |
+| [`/land/{landId}/object/{id}`](#delete-land-object) | DELETE |               | Deletes an object             |
+
+#### Get Land Objects
+Fetches all objects from a land
+
+_Request must have a valid token_
+
+#### Create Land Object
+
+Creates a new object in the given land
+
+_Request must have a valid token_
+
+Requires a payload with the new object
+```json
+{
+  "lat": 12.34,
+  "lon": 12.34,
+  "status": "Some status",
+  "typeId": 1
+}
+```
+
+#### Modify Land Object
+
+Edits the data of a land object
+
+_Request must have a valid token_
+
+Requires a payload with the new data
+```json
+{
+  "lat": 12.34,
+  "lon": 12.34,
+  "status": "Some status",
+  "typeId": 1
+}
+```
+
+#### Delete Land Object
+
+Deletes an existing object
+
+_Request must have a valid token_
+
+Requires an _id_ as a parameter
+
+#### Delete Objects by Type
+
+Deletes all objects of a given type
+
+_Request must have a valid token_
+
+Requires a _type_ as a parameter
 
 ### Object type
