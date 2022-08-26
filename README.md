@@ -29,7 +29,7 @@ Requires a payload with the user's credentials
 #### Login
 `GET /user`
 
-Endpoint to login the user through basic authentication.
+Endpoint to log in the user through basic authentication.
 
 Returns a JWT token in the header `Access-Token`.
 The token is valid for 30 days.
@@ -173,7 +173,7 @@ Deletes an existing object
 
 _Request must have a valid token_
 
-Requires an _id_ as a parameter
+Requires an _id_ as a path parameter
 
 #### Delete Objects by Type
 
@@ -181,6 +181,69 @@ Deletes all objects of a given type
 
 _Request must have a valid token_
 
-Requires a _type_ as a parameter
+Requires a _type_ as a query parameter
 
 ### Object type
+
+| Path                                                    | Method | Description               |
+|---------------------------------------------------------|--------|---------------------------|
+| [`/land/{landId}/objectType`](#get-object-types)        | GET    | Gets all object types     |
+| [`/land/{landId}/objectType`](#create-object-type)      | POST   | Creates a new object type |
+| [`/land/{landId}/objectType/{id}`](#modify-object-type) | PUT    | Edits an object type      |
+| [`/land/{landId}/objectType/{id}`](#delete-object-type) | DELETE | Deletes an object type    |
+
+#### Get Object Types
+
+Fetches all object types for a land
+
+_Request must have a valid token_
+
+#### Create Object Type
+
+Creates one or multiple object types in the given land
+
+_Request must have a valid token_
+
+Requires one of the following payloads
+```json
+{
+  "name": "example",
+  "color": "#ffffff",
+  "icon": "some icon name"
+}
+```
+```json
+[
+  {
+    "name": "example",
+    "color": "#ffffff",
+    "icon": "some icon name"
+  },
+  "..."
+]
+```
+
+#### Modify Object Type
+
+Edits the data of an object type
+
+_Request must have a valid token_
+
+Requires a payload with the new object type
+```json
+{
+  "name": "example",
+  "color": "#ffffff",
+  "icon": "some icon name"
+}
+```
+
+#### Delete Object Type
+
+Deletes an existing object type
+
+_Request must have a valid token_
+
+Requires an _id_ as a path parameter
+
+
