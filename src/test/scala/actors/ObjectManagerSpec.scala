@@ -1,6 +1,7 @@
 package actors
 
 import actors.ObjectManagerSpec.{genAddLandObject, genChangeLandObject}
+import actors.ObjectTypeSpec.dateGen
 import akka.actor.{Actor, ActorSystem, PoisonPill}
 import akka.pattern.StatusReply._
 import akka.persistence.testkit.PersistenceTestKitPlugin
@@ -37,7 +38,9 @@ object ObjectManagerSpec {
     val landObjectGen = for {
       id <- Gen.choose(1, 1000)
       obj <- genLandObject()
-    } yield LandObject tupled obj.+:(id)
+      modifiedAt <- dateGen
+      createdAt <- dateGen
+    } yield LandObject tupled obj.+:(id) :+ modifiedAt :+ createdAt
     landObjectGen.sample.get
   }
 
@@ -76,7 +79,9 @@ class ObjectManagerSpec
       objectManagerActor = system.actorOf(ObjectManager.props(username, testLandId))
       val addLandObject = genAddLandObject()
       objectManagerActor ! addLandObject
-      expectMsg(Success(LandObject(1, addLandObject.lat, addLandObject.lon, addLandObject.status, addLandObject.typeId)))
+      expectMsgPF() {
+        case Success(LandObject(1, addLandObject.lat, addLandObject.lon, addLandObject.status, addLandObject.typeId, _, _)) =>
+      }
     }
 
     "not create an object with the same id as a previous one" in {
@@ -87,17 +92,9 @@ class ObjectManagerSpec
 
       val anotherAddLandObject = genAddLandObject()
       objectManagerActor ! anotherAddLandObject
-      expectMsg(
-        Success(
-          LandObject(
-            2,
-            anotherAddLandObject.lat,
-            anotherAddLandObject.lon,
-            anotherAddLandObject.status,
-            anotherAddLandObject.typeId
-          )
-        )
-      )
+      expectMsgPF() {
+        case Success(LandObject(2, anotherAddLandObject.lat, anotherAddLandObject.lon, anotherAddLandObject.status, anotherAddLandObject.typeId, _, _)) =>
+      }
     }
   }
 
@@ -128,7 +125,9 @@ class ObjectManagerSpec
 
       val changeLandObject = genChangeLandObject(Some(1))
       objectManagerActor ! changeLandObject
-      expectMsg(Success(ChangeLandObject.unapply(changeLandObject).map(LandObject tupled).get))
+      expectMsgPF() {
+        case Success(LandObject(changeLandObject.id, changeLandObject.lat, changeLandObject.lon, changeLandObject.status, changeLandObject.typeId, _, _)) =>
+      }
     }
 
     "fail when the object does not exist" in {

@@ -4,6 +4,7 @@ import akka.actor.{ActorLogging, ActorRef, Props, ReceiveTimeout, Stash, Timers}
 import akka.pattern.StatusReply._
 import akka.persistence.PersistentActor
 
+import java.util.Date
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -24,7 +25,7 @@ object ObjectManager {
   case object Destroy extends Command
 
   // Events
-  case class LandObject(id: Int, lat: Double, lon: Double, status: String, typeId: Int)
+  case class LandObject(id: Int, lat: Double, lon: Double, status: String, typeId: Int, modifiedAt: Date, createdAt: Date)
   case class DeletedLandObject(id: Int)
 
 }
@@ -42,7 +43,7 @@ class ObjectManager(username: String, landId: Int, receiveTimeoutDuration: Durat
   override def persistenceId: String = s"object-manager-$username-$landId"
 
   override def receiveRecover: Receive = {
-    case obj @ LandObject(id, _, _, _, _) =>
+    case obj @ LandObject(id, _, _, _, _, _, _) =>
       objects += id -> obj
       currentId += 1
     case DeletedLandObject(id) =>
@@ -55,7 +56,7 @@ class ObjectManager(username: String, landId: Int, receiveTimeoutDuration: Durat
 
     case cmd @ AddLandObject(lat, lon, status, typeId) =>
       log.info(s"[$persistenceId] Adding object: $cmd")
-      persist(LandObject(currentId, lat, lon, status, typeId)) { event =>
+      persist(LandObject(currentId, lat, lon, status, typeId, new Date, new Date)) { event =>
         objects += event.id -> event
         currentId += 1
         sender ! Success(event)
@@ -73,9 +74,9 @@ class ObjectManager(username: String, landId: Int, receiveTimeoutDuration: Durat
       sender ! Error(s"Object $id does not exist")
 
     case cmd @ ChangeLandObject(id, lat, lon, status, typeId) if objects.contains(id) =>
-      objects.get(id).foreach { _ =>
+      objects.get(id).foreach { oldObject =>
         log.info(s"[$persistenceId] Changing object $id to $cmd")
-        persist(LandObject(id, lat, lon, status, typeId)) { event =>
+        persist(LandObject(id, lat, lon, status, typeId, new Date, oldObject.createdAt)) { event =>
           objects += event.id -> event
           sender ! Success(event)
         }

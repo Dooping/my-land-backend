@@ -11,6 +11,8 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import protocols.ObjectManagerJsonProtocol
 
+import java.util.Date
+
 class LandObjectRouteSpec extends AnyWordSpecLike
   with Matchers
   with BeforeAndAfterAll
@@ -46,7 +48,7 @@ class LandObjectRouteSpec extends AnyWordSpecLike
       val randomObject = genAddLandObject()
       testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
         case LandObjectsCommand(_, AddLandObject(lat, lon, status, typeId)) =>
-          sender ! Success(LandObject(1, lat, lon, status, typeId))
+          sender ! Success(LandObject(1, lat, lon, status, typeId, new Date, new Date))
           TestActor.KeepRunning
       })
       Post("/object", randomObject) ~> LandObjectRoute.route(userManagement, testUsername, testLandId) ~> check {
@@ -79,7 +81,7 @@ class LandObjectRouteSpec extends AnyWordSpecLike
       val payload = genAddLandObject()
       testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
         case LandObjectsCommand(_, ChangeLandObject(id, lat, lon, status, typeId)) =>
-          sender ! Success(LandObject(id, lat, lon, status, typeId))
+          sender ! Success(LandObject(id, lat, lon, status, typeId, new Date, new Date))
           TestActor.KeepRunning
       })
       Put("/object/1", payload) ~> LandObjectRoute.route(userManagement, testUsername, testLandId) ~> check {
