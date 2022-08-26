@@ -38,6 +38,16 @@ object ObjectTypeRoute extends ObjectTypeJsonProtocol {
           }
         complete(addObjectTypeFuture)
       } ~
+      (post & pathEndOrSingleSlash & entity(as[List[ObjType]])) { objTypes =>
+        val addObjectTypesFuture = (authenticator ? LandCommand(username, LandObjectTypesCommand(landId, BatchAddObjectType(objTypes))))
+          .mapTo[StatusReply[List[ObjectTypeEntity]]]
+          .map {
+            case Success(entities: List[ObjectTypeEntity]) =>
+              HttpResponse(StatusCodes.Created, entity = HttpEntity(ContentTypes.`application/json`, entities.toJson.prettyPrint))
+            case Error(reason) => HttpResponse(StatusCodes.BadRequest, entity = HttpEntity(reason.getMessage))
+          }
+        complete(addObjectTypesFuture)
+      } ~
       path(IntNumber) { id =>
         put {
           entity(as[ObjType]) { objectType =>

@@ -14,7 +14,7 @@ object ObjectType {
   case class ObjType(name: String, color: String, icon: String)
 
   sealed trait Command
-  case class AddObjectType(obj: ObjType) extends Command
+  case class AddObjectType(objType: ObjType) extends Command
   case class BatchAddObjectType(objectTypes: List[ObjType]) extends Command
   case object GetObjectTypes extends Command
   case class ChangeObjectType(id: Int, objType: ObjType) extends Command

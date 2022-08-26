@@ -72,6 +72,21 @@ class ObjectTypeRouteSpec extends AnyWordSpecLike
       }
     }
 
+    "register multiple object types" in {
+      val randomObjectTypeList = generateObjectTypeList
+      testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
+        case BatchAddObjectType(objects) =>
+          val result = objects.map(obj => generateObjectTypeEntity.sample.get.copy(name = obj.name, color = obj.color, icon = obj.icon))
+          sender ! Success(result)
+          TestActor.KeepRunning
+      })
+      Post("/objectType", randomObjectTypeList) ~> ObjectTypeRoute.route(userManagement, testUsername, testLandId) ~> check {
+        val objTypes = responseAs[List[ObjectTypeEntity]]
+        status shouldBe StatusCodes.Created
+        objTypes.length shouldBe randomObjectTypeList.length
+      }
+    }
+
     "get all previously registered lands" in {
       val listToReturn = generateObjectTypeListEntity
       testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
