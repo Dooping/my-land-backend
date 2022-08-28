@@ -210,7 +210,7 @@ Requires one of the following payloads
   "icon": "some icon name"
 }
 ```
-```json
+```json5
 [
   {
     "name": "example",
@@ -244,4 +244,69 @@ _Request must have a valid token_
 
 Requires an _id_ as a path parameter
 
+### Template
+
+| Path                            | Method | Parameters   | Permissions | Description                   |
+|---------------------------------|--------|--------------|-------------|-------------------------------|
+| [`/template`](#get-templates)   | GET    | locale       | User        | Gets all templates for locale |
+| [`/template`](#create-template) | POST   |              | Admin       | Creates a new template        |
+| [`/template`](#modify-template) | PUT    |              | Admin       | Edits an existing template    |
+| [`/template`](#delete-template) | DELETE | locale, name | Admin       | Deletes a template            |
+
+#### Get Templates
+
+Fetches all templates for the provided _locale_
+
+_Request must have a valid token_
+
+#### Create Template
+
+Creates a new template
+
+Requires a payload with the new data
+```json
+{
+  "locale": "en",
+  "name": "some name",
+  "objTypes": [
+    {
+      "name": "example",
+      "color": "#ffffff",
+      "icon": "some icon name"
+    },
+    "..."
+  ]
+}
+```
+
+**Only admin users can make this request.**
+
+#### Modify Template
+
+Edits the data of a template.
+
+Requires a payload with the new data
+```json
+{
+  "locale": "en",
+  "name": "some name",
+  "objTypes": [
+    {
+      "name": "example",
+      "color": "#ffffff",
+      "icon": "some icon name"
+    },
+    "..."
+  ]
+}
+```
+**Only admin users can make this request.**
+
+#### Delete Template
+
+Deletes a template
+
+Requires both _locale_ and _name_ as a query parameters
+
+**Only admin users can make this request.**
 
