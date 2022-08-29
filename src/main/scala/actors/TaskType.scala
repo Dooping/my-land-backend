@@ -33,7 +33,7 @@ class TaskType(username: String, landId: Int, receiveTimeoutDuration: Duration =
   var taskTypes: Map[Int, TaskTypeEntity] = Map()
   var currentId: Int = 1
 
-  override def persistenceId: String = s"task-type-$username-$landId"
+  override def persistenceId: String = s"task-types-$username-$landId"
 
   override def receiveRecover: Receive = {
     case taskType: TaskTypeEntity =>
