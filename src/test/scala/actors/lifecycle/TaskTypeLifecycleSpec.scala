@@ -1,5 +1,6 @@
-package actors
+package actors.lifecycle
 
+import actors.{Land, LandSpec, TaskType}
 import akka.actor.{Actor, ActorRef, ActorSystem, PoisonPill, ReceiveTimeout}
 import akka.pattern.StatusReply.Success
 import akka.persistence.testkit.PersistenceTestKitPlugin

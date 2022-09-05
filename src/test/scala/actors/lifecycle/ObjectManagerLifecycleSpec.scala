@@ -1,13 +1,14 @@
-package actors
+package actors.lifecycle
 
+import actors.{Land, LandSpec, ObjectManager}
 import akka.actor.{ActorSystem, Props}
 import akka.pattern.StatusReply.Success
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
 import akka.testkit.{EventFilter, ImplicitSender, TestKit, TestProbe}
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
 import scala.concurrent.duration._
 import scala.language.postfixOps

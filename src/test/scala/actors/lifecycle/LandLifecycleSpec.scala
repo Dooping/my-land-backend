@@ -1,12 +1,13 @@
-package actors
+package actors.lifecycle
 
+import actors.{Land, UserManagement}
 import akka.actor.{ActorSystem, Props, ReceiveTimeout}
 import akka.persistence.testkit.PersistenceTestKitPlugin
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
 import akka.testkit.{EventFilter, ImplicitSender, TestKit}
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
 import scala.language.postfixOps
 
