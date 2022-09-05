@@ -9,7 +9,8 @@ object UserManagement {
   sealed trait Command
   case class GetPassword(username: String) extends Command
   case class Register(username: String, password: String) extends Command
-  case class LandCommand(username: String, cmd: Land.Command)
+  case class LandCommand(username: String, cmd: Land.Command) extends Command
+  case class TaskCommand(username: String, cmd: TaskManager.Command) extends Command
 
   case class StoredPassword(username: String, password: String)
 }
@@ -18,6 +19,7 @@ class UserManagement extends PersistentActor with ActorLogging {
 
   var users: Map[String, String] = Map("david" -> BCrypt.hashpw("p4ssw0rd", BCrypt.gensalt())) //TODO: remove initialization
   var userLands: Map[String, ActorRef] = Map()
+  var userTasks: Map[String, ActorRef] = Map()
 
   override val persistenceId: String = "user-manager"
 
@@ -47,6 +49,18 @@ class UserManagement extends PersistentActor with ActorLogging {
           land
         })
         userLand.forward(cmd)
+      } else sender ! Error(s"User $username does not exist")
+
+    case TaskCommand(username, cmd) =>
+      if (users.contains(username)) {
+        val userTask: ActorRef = userTasks.getOrElse(username, {
+          log.info(s"[$persistenceId] Creating task actor for $username")
+          val task = context.actorOf(TaskManager.props(username), s"task-$username")
+          userTasks += username -> task
+          context.watch(task)
+          task
+        })
+        userTask.forward(cmd)
       } else sender ! Error(s"User $username does not exist")
 
     case Terminated(actorRef) =>

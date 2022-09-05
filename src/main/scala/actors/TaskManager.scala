@@ -18,15 +18,15 @@ object TaskManager {
   trait Command
   case object GetAllTasks extends Command
   case class GetLandTasks(landId: Int) extends Command
-  case class GetLandObjectTasks(landId: Int, objectId: Int)
+  case class GetLandObjectTasks(landId: Int, objectId: Int) extends Command
   case object GetSeasonTasks extends Command
   case object GetOpenTasks extends Command
-  case class CreateTask(landId: Int, task: TaskModel)
-  case class CreateTasks(landId: Int, tasks: List[TaskModel])
-  case class ModifyTask(id: Int, taskModel: TaskModel)
-  case class ArchiveTask(id: Int)
-  case class CompleteTask(id: Int)
-  case class DeleteTask(id: Int)
+  case class CreateTask(landId: Int, task: TaskModel) extends Command
+  case class CreateTasks(landId: Int, tasks: List[TaskModel]) extends Command
+  case class ModifyTask(id: Int, taskModel: TaskModel) extends Command
+  case class ArchiveTask(id: Int) extends Command
+  case class CompleteTask(id: Int) extends Command
+  case class DeleteTask(id: Int) extends Command
 
   // Events
   case class TaskEntity(
