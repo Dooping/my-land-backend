@@ -25,7 +25,8 @@ object LandRoute extends LandJsonProtocol {
       path(IntNumber) { id =>
         ObjectTypeRoute.route(authenticator, username, id) ~
         LandObjectRoute.route(authenticator, username, id) ~
-        TaskTypeRoute.route(authenticator, username, id)
+        TaskTypeRoute.route(authenticator, username, id) ~
+        TaskManagerRoute.landRoute(authenticator, username, id)
       } ~
       get {
         (parameter(Symbol("id").as[Int]) | path(IntNumber)) { id =>

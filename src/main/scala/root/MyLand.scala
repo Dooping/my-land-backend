@@ -5,7 +5,7 @@ import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives._
 import akka.stream.Materializer
-import routes.{LandRoute, TemplateRoute, UserManagementRoute}
+import routes.{LandRoute, TaskManagerRoute, TemplateRoute, UserManagementRoute}
 import utils.JwtHelper.jwtAuthenticator
 import utils.RejectionHandlers
 
@@ -23,7 +23,8 @@ object MyLand extends App {
       handleRejections(RejectionHandlers.authorizationFailedHandler) {
         authenticateOAuth2("MyLand", jwtAuthenticator) { payload =>
           LandRoute.route(userManagerActor, payload.username) ~
-          TemplateRoute.route(templateActor, payload)
+          TemplateRoute.route(templateActor, payload) ~
+          TaskManagerRoute.route(userManagerActor, payload.username)
         }
       }
     }
