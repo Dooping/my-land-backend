@@ -30,7 +30,7 @@ object ObjectManagerSpec {
     val changeLandObjectGen = for {
       id <- id.map(Gen.const).getOrElse(Gen.choose(1, 1000))
       obj <- genLandObject()
-    } yield ChangeLandObject tupled obj.+:(id)
+    } yield ChangeLandObject tupled id +: obj
     changeLandObjectGen.sample.get
   }
   def genLandObjectEntity: LandObject = {
@@ -39,7 +39,7 @@ object ObjectManagerSpec {
       obj <- genLandObject()
       modifiedAt <- dateGen
       createdAt <- dateGen
-    } yield LandObject tupled obj.+:(id) :+ modifiedAt :+ createdAt
+    } yield LandObject tupled id +: obj :+ modifiedAt :+ createdAt
     landObjectGen.sample.get
   }
 

@@ -61,7 +61,7 @@ class TaskTypeRouteSpec extends AnyWordSpecLike
       val randomTaskType = genTaskTypeModel
       testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
         case AddTaskType(taskType) =>
-          sender ! Success(TaskTypeEntity tupled TaskTypeModel.unapply(taskType).get.+:(1))
+          sender ! Success(TaskTypeEntity tupled 1 +: TaskTypeModel.unapply(taskType).get)
           TestActor.KeepRunning
       })
       Post("/taskType", randomTaskType) ~> TaskTypeRoute.route(userManagement, testUsername, testLandId) ~> check {

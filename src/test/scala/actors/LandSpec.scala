@@ -38,7 +38,7 @@ object LandSpec {
     val landEntityGen = for {
       id <- id.map(Gen.const).getOrElse(Gen.choose(1, 1000))
       land <- landGen(None)
-    } yield LandEntity tupled land.+:(id)
+    } yield LandEntity tupled id +: land
     landEntityGen.sample.get
   }
 }

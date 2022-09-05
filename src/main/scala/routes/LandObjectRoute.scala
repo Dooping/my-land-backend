@@ -51,7 +51,7 @@ object LandObjectRoute extends ObjectManagerJsonProtocol {
       } ~
       path(IntNumber) { id =>
         (put & entity(as[AddLandObject])) { command =>
-          val changeCommand = AddLandObject.unapply(command).map(ChangeLandObject tupled _.+:(id)).get
+          val changeCommand = AddLandObject.unapply(command).map(ChangeLandObject tupled id +: _).get
           val putObjectsFuture = (authenticator ? LandCommand(username, LandObjectsCommand(landId, changeCommand)))
             .mapTo[StatusReply[LandObject]]
             .map {
