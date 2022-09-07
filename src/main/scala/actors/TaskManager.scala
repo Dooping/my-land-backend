@@ -13,7 +13,12 @@ object TaskManager {
 
   def props(username: String): Props = Props(new TaskManager(username))
 
-  case class TaskModel(objectId: Int, taskTypeId: Int, priority: Int, notes: String)
+  case class TaskModel(objectId: Int, taskTypeId: Int, priority: Int, notes: String) {
+    def toEntity(id: Int, landId: Int): TaskEntity ={
+      val now = new Date
+      TaskEntity(id, landId, objectId, taskTypeId, priority, notes, now, now)
+    }
+  }
 
   trait Command
   case object GetAllTasks extends Command
@@ -96,7 +101,7 @@ class TaskManager(username: String, receiveTimeoutDuration: Duration = 1 hour) e
 
     case CreateTask(landId, task) =>
       log.info(s"[$persistenceId] Creating a new task $task")
-      persist(TaskEntity(currentId, landId, task.objectId, task.taskTypeId, task.priority, task.notes, new Date, new Date)) { event =>
+      persist(task.toEntity(currentId, landId)) { event =>
         tasks += event.id -> event
         currentId += 1
         sender ! Success(event)

@@ -24,11 +24,12 @@ object TaskManagerSpec {
     priority <- Gen.choose(1, 5)
     notes <- Gen.alphaStr
   } yield TaskModel(objId, taskType, priority, notes)
+  def genTaskModelList: Gen[List[TaskModel]] = Gen.containerOfN[List, TaskModel](Gen.choose(1, 5).sample.get, genTaskModel())
   def genCreateTask(landId: Int, objectId: Option[Int] = None): CreateTask = CreateTask(landId, genTaskModel(objectId).sample.get)
   def genModifyTask(id: Int): ModifyTask = ModifyTask(id, genTaskModel().sample.get)
   def genCreateTasks(landId: Int): CreateTasks = CreateTasks(
     landId,
-    Gen.containerOfN[List, TaskModel](Gen.choose(1, 5).sample.get, genTaskModel()).sample.get
+    genTaskModelList.sample.get
   )
 }
 class TaskManagerSpec
