@@ -51,6 +51,7 @@ Or in the parameter `access_token`.
 | [`/land/{landId}`](#delete-land)            | DELETE |               | Deletes a land           |
 | [`/land/{landId}/object`](#land-object)     |        |               | Land objects endpoints   |
 | [`/land/{landId}/objectType`](#object-type) |        |               | Object type endpoints    |
+| [`/land/{landId}/taskType`](#task-type)     |        |               | Task type endpoints      |
 
 
 #### Get lands
@@ -183,12 +184,12 @@ Requires a _type_ as a query parameter
 
 ### Object type
 
-| Path                                                    | Method | Description               |
-|---------------------------------------------------------|--------|---------------------------|
-| [`/land/{landId}/objectType`](#get-object-types)        | GET    | Gets all object types     |
-| [`/land/{landId}/objectType`](#create-object-type)      | POST   | Creates a new object type |
-| [`/land/{landId}/objectType/{id}`](#modify-object-type) | PUT    | Edits an object type      |
-| [`/land/{landId}/objectType/{id}`](#delete-object-type) | DELETE | Deletes an object type    |
+| Path                                                    | Method | Description                |
+|---------------------------------------------------------|--------|----------------------------|
+| [`/land/{landId}/objectType`](#get-object-types)        | GET    | Gets all object types      |
+| [`/land/{landId}/objectType`](#create-object-type)      | POST   | Creates new object type(s) |
+| [`/land/{landId}/objectType/{id}`](#modify-object-type) | PUT    | Edits an object type       |
+| [`/land/{landId}/objectType/{id}`](#delete-object-type) | DELETE | Deletes an object type     |
 
 #### Get Object Types
 
@@ -227,6 +228,8 @@ Edits the data of an object type
 
 _Request must have a valid token_
 
+Requires an _id_ as a path parameter
+
 Requires a payload with the new object type
 ```json
 {
@@ -239,6 +242,68 @@ Requires a payload with the new object type
 #### Delete Object Type
 
 Deletes an existing object type
+
+_Request must have a valid token_
+
+Requires an _id_ as a path parameter
+
+### Task Type
+
+| Path                                                | Method | Description                   |
+|-----------------------------------------------------|--------|-------------------------------|
+| [`/land/{landId}/taskType`](#get-task-types)        | GET    | Gets all task types from land |
+| [`/land/{landId}/taskType`](#create-task-type)      | POST   | Creates new task type(s)      |
+| [`/land/{landId}/taskType/{id}`](#modify-task-type) | PUT    | Edits a task type             |
+| [`/land/{landId}/taskType/{id}`](#delete-task-type) | DELETE | Deletes a task type           |
+
+#### Get Task Types
+
+Fetches all task types for a land
+
+_Request must have a valid token_
+
+#### Create Task Type
+
+Creates one or multiple task types in the given land
+
+_Request must have a valid token_
+
+Requires one of the following payloads
+```json
+{
+  "name": "Planting",
+  "description": "planting seeds for some crops"
+}
+```
+```json
+[
+  {
+    "name": "Planting",
+    "description": "planting seeds for some crops"
+  },
+  "..."
+]
+```
+
+#### Modify Task Type
+
+Edits the data of a task type
+
+_Request must have a valid token_
+
+Requires an _id_ as a path parameter
+
+Requires a payload with the new task type
+```json
+{
+  "name": "Planting",
+  "description": "planting seeds for some crops"
+}
+```
+
+#### Delete Task Type
+
+Deletes an existing task type
 
 _Request must have a valid token_
 
