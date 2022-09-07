@@ -28,25 +28,27 @@ object TaskTypeRoute extends TaskTypeJsonProtocol {
           .mapTo[List[TaskTypeEntity]]
         complete(getTaskTypeFuture)
       } ~
-      (post & pathEndOrSingleSlash & entity(as[TaskTypeModel])) { taskType =>
-        val addTaskTypeFuture = (authenticator ? LandCommand(username, LandTaskTypesCommand(landId, AddTaskType(taskType))))
-          .mapTo[StatusReply[TaskTypeEntity]]
-          .map {
-            case Success(entity: TaskTypeEntity) =>
-              HttpResponse(StatusCodes.Created, entity = HttpEntity(ContentTypes.`application/json`, entity.toJson.prettyPrint))
-            case Error(reason) => HttpResponse(StatusCodes.BadRequest, entity = HttpEntity(reason.getMessage))
-          }
-        complete(addTaskTypeFuture)
-      } ~
-      (post & pathEndOrSingleSlash & entity(as[List[TaskTypeModel]])) { objTypes =>
-        val addTaskTypesFuture = (authenticator ? LandCommand(username, LandTaskTypesCommand(landId, BatchAddTaskType(objTypes))))
-          .mapTo[StatusReply[List[TaskTypeEntity]]]
-          .map {
-            case Success(entities: List[TaskTypeEntity]) =>
-              HttpResponse(StatusCodes.Created, entity = HttpEntity(ContentTypes.`application/json`, entities.toJson.prettyPrint))
-            case Error(reason) => HttpResponse(StatusCodes.BadRequest, entity = HttpEntity(reason.getMessage))
-          }
-        complete(addTaskTypesFuture)
+      (post & pathEndOrSingleSlash) {
+        entity(as[TaskTypeModel]) { taskType =>
+          val addTaskTypeFuture = (authenticator ? LandCommand(username, LandTaskTypesCommand(landId, AddTaskType(taskType))))
+            .mapTo[StatusReply[TaskTypeEntity]]
+            .map {
+              case Success(entity: TaskTypeEntity) =>
+                HttpResponse(StatusCodes.Created, entity = HttpEntity(ContentTypes.`application/json`, entity.toJson.prettyPrint))
+              case Error(reason) => HttpResponse(StatusCodes.BadRequest, entity = HttpEntity(reason.getMessage))
+            }
+          complete(addTaskTypeFuture)
+        } ~
+        entity(as[List[TaskTypeModel]]) { taskTypes =>
+          val addTaskTypesFuture = (authenticator ? LandCommand(username, LandTaskTypesCommand(landId, BatchAddTaskType(taskTypes))))
+            .mapTo[StatusReply[List[TaskTypeEntity]]]
+            .map {
+              case Success(entities: List[TaskTypeEntity]) =>
+                HttpResponse(StatusCodes.Created, entity = HttpEntity(ContentTypes.`application/json`, entities.toJson.prettyPrint))
+              case Error(reason) => HttpResponse(StatusCodes.BadRequest, entity = HttpEntity(reason.getMessage))
+            }
+          complete(addTaskTypesFuture)
+        }
       } ~
       path(IntNumber) { id =>
         put {
