@@ -28,7 +28,7 @@ object TemplateRoute extends ObjectTypeJsonProtocol with TemplateJsonProtocol {
         complete(templateFuture)
       } ~
       admin(authPayload) {
-        (post & entity(as[RegisterNewLandTemplate])) { registerCommand =>
+        (post & entity(as[RegisterNewLandObjectTemplate])) { registerCommand =>
           val templateFuture = (template ? registerCommand)
             .mapTo[StatusReply[Any]]
             .map {
@@ -37,7 +37,7 @@ object TemplateRoute extends ObjectTypeJsonProtocol with TemplateJsonProtocol {
             }
           complete(templateFuture)
         } ~
-        (put & entity(as[ChangeLandTemplate])) { putCommand =>
+        (put & entity(as[ChangeLandObjectTemplate])) { putCommand =>
           val templateFuture = (template ? putCommand)
             .mapTo[StatusReply[Any]]
             .map {
@@ -47,7 +47,7 @@ object TemplateRoute extends ObjectTypeJsonProtocol with TemplateJsonProtocol {
           complete(templateFuture)
         } ~
         (delete & parameter(Symbol("locale").as[String], Symbol("name").as[String])) { (locale, name) =>
-          val templateFuture = (template ? DeleteLandTemplate(locale, name))
+          val templateFuture = (template ? DeleteLandObjectTemplate(locale, name))
             .mapTo[StatusReply[Any]]
             .map {
               case Success(_) => HttpResponse(StatusCodes.OK)

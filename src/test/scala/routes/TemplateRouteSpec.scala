@@ -90,14 +90,14 @@ class TemplateRouteSpec extends AnyWordSpecLike
       val templateName = nameGen.sample.get
       val templateLocale = localeGen.sample.get
       testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
-        case RegisterNewLandTemplate(locale, name, objTypes) =>
+        case RegisterNewLandObjectTemplate(locale, name, objTypes) =>
           assert(objTypes == defaultTemplate)
           assert(locale == templateLocale)
           assert(name == templateName)
           sender ! Success()
           TestActor.KeepRunning
       })
-      Post("/template", RegisterNewLandTemplate(templateLocale, templateName, defaultTemplate)) ~>
+      Post("/template", RegisterNewLandObjectTemplate(templateLocale, templateName, defaultTemplate)) ~>
           TemplateRoute.route(testProbe.ref, testAdminAuthPayload) ~> check {
         status shouldBe StatusCodes.OK
       }
@@ -115,14 +115,14 @@ class TemplateRouteSpec extends AnyWordSpecLike
       val templateName = nameGen.sample.get
       val templateLocale = localeGen.sample.get
       testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
-        case ChangeLandTemplate(locale, name, objTypes) =>
+        case ChangeLandObjectTemplate(locale, name, objTypes) =>
           assert(objTypes == defaultTemplate)
           assert(locale == templateLocale)
           assert(name == templateName)
           sender ! Success()
           TestActor.KeepRunning
       })
-      Put("/template", ChangeLandTemplate(templateLocale, templateName, defaultTemplate)) ~>
+      Put("/template", ChangeLandObjectTemplate(templateLocale, templateName, defaultTemplate)) ~>
         TemplateRoute.route(testProbe.ref, testAdminAuthPayload) ~> check {
         status shouldBe StatusCodes.OK
       }
@@ -139,7 +139,7 @@ class TemplateRouteSpec extends AnyWordSpecLike
       val templateName = nameGen.sample.get
       val templateLocale = localeGen.sample.get
       testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
-        case DeleteLandTemplate(locale, name) =>
+        case DeleteLandObjectTemplate(locale, name) =>
           assert(locale == templateLocale)
           assert(name == templateName)
           sender ! Success()

@@ -40,16 +40,19 @@ class TemplateSpec
   override def beforeAll(): Unit = {
     super.beforeAll()
     userManagerActor = system.actorOf(Props[UserManagement], "user-manager")
-    templateActor = system.actorOf(Template.props(userManagerActor))
+    userManagerActor ! Register(username, "12345")
+    receiveN(1)
   }
 
 
   override def beforeEach(): Unit = {
     super.beforeEach()
     persistenceTestKit.clearAll()
+    templateActor = system.actorOf(Template.props(userManagerActor))
   }
 
   override def afterEach(): Unit = {
+    templateActor ! PoisonPill
     super.afterEach()
   }
 
@@ -67,65 +70,68 @@ class TemplateSpec
   "A template actor create" should {
 
     "register a new template" in {
-      templateActor ! RegisterNewLandTemplate(testingLocale, testingName, generateObjectTypeList)
+      templateActor ! RegisterNewLandObjectTemplate(testingLocale, testingName, generateObjectTypeList)
       expectMsg(Success())
     }
 
     "not create a duplicate template" in {
-      templateActor ! RegisterNewLandTemplate(testingLocale, testingName, generateObjectTypeList)
+      templateActor ! RegisterNewLandObjectTemplate(testingLocale, testingName, generateObjectTypeList)
+      receiveN(1)
+      templateActor ! RegisterNewLandObjectTemplate(testingLocale, testingName, generateObjectTypeList)
       expectMsg(Error(s"Template $testingName already exists for locale $testingLocale"))
     }
   }
 
   "A template actor put" should {
     "change an existing template" in {
-      templateActor ! ChangeLandTemplate(testingLocale, testingName, generateObjectTypeList)
+      templateActor ! RegisterNewLandObjectTemplate(testingLocale, testingName, generateObjectTypeList)
+      receiveN(1)
+      templateActor ! ChangeLandObjectTemplate(testingLocale, testingName, generateObjectTypeList)
       expectMsg(Success())
     }
 
     "fail changing a template that doesn't exist" in {
+      templateActor ! RegisterNewLandObjectTemplate(testingLocale, testingName, generateObjectTypeList)
+      receiveN(1)
       val invalidTemplateName = "notATemplate"
-      templateActor ! ChangeLandTemplate(testingLocale, invalidTemplateName, generateObjectTypeList)
+      templateActor ! ChangeLandObjectTemplate(testingLocale, invalidTemplateName, generateObjectTypeList)
       expectMsg(Error(s"Template $invalidTemplateName for locale $testingLocale does not exist"))
     }
 
     "fail changing a template in a locale that doesn't exist" in {
       val invalidLocale = "ot"
-      templateActor ! ChangeLandTemplate(invalidLocale, testingName, generateObjectTypeList)
+      templateActor ! ChangeLandObjectTemplate(invalidLocale, testingName, generateObjectTypeList)
       expectMsg(Error(s"Locale $invalidLocale does not exist"))
     }
   }
 
   "A template actor delete" should {
     "delete an existing template" in {
-      templateActor ! DeleteLandTemplate(testingLocale, testingName)
+      templateActor ! RegisterNewLandObjectTemplate(testingLocale, testingName, generateObjectTypeList)
+      receiveN(1)
+      templateActor ! DeleteLandObjectTemplate(testingLocale, testingName)
       expectMsg(Success())
     }
 
     "be successful if the locale exists but the name doesn't" in {
-      templateActor ! RegisterNewLandTemplate(testingLocale, testingName, generateObjectTypeList)
+      templateActor ! RegisterNewLandObjectTemplate(testingLocale, testingName, generateObjectTypeList)
       expectMsg(Success())
       val nonExistingTemplate = "someTemplate"
-      templateActor ! DeleteLandTemplate(testingLocale, nonExistingTemplate)
+      templateActor ! DeleteLandObjectTemplate(testingLocale, nonExistingTemplate)
       expectMsg(Success())
     }
 
     "fail if the locale doesn't exist" in {
       val nonExistingLocale = "ot"
-      templateActor ! DeleteLandTemplate(nonExistingLocale, testingName)
+      templateActor ! DeleteLandObjectTemplate(nonExistingLocale, testingName)
       expectMsg(Error(s"Locale $nonExistingLocale does not exist"))
     }
   }
 
   "A template actor get" should {
     "fetch a previously registered template" in {
-      userManagerActor ! Register(username, "12345")
-      expectMsg(Success())
-      templateActor ! DeleteLandTemplate(testingLocale, testingName)
-      expectMsg(Success())
-
       val newTemplate = generateObjectTypeList
-      templateActor ! RegisterNewLandTemplate(testingLocale, testingName, newTemplate)
+      templateActor ! RegisterNewLandObjectTemplate(testingLocale, testingName, newTemplate)
       expectMsg(Success())
       templateActor ! GetObjectTypeOptions(username, testingLocale)
       val response = expectMsgType[StatusReply[ObjectTypeOptionsResponse]].getValue
@@ -138,7 +144,7 @@ class TemplateSpec
     "fetch template of the right localization" in {
       val newTemplate = generateObjectTypeList
       val newName = nameGen.sample.get
-      templateActor ! RegisterNewLandTemplate("ot", newName, newTemplate)
+      templateActor ! RegisterNewLandObjectTemplate("ot", newName, newTemplate)
       expectMsg(Success())
       templateActor ! GetObjectTypeOptions(username, "ot")
       val response = expectMsgType[StatusReply[ObjectTypeOptionsResponse]].getValue
@@ -149,6 +155,8 @@ class TemplateSpec
     }
 
     "fetch default template plus any templates in use by lands" in {
+      templateActor ! RegisterNewLandObjectTemplate(testingLocale, testingName, generateObjectTypeList)
+      expectMsg(Success())
       val landTemplate = generateObjectTypeList
       val landName = nameGen.sample
       userManagerActor ! LandCommand(username, generateRandomAddLand(landName))
@@ -178,7 +186,7 @@ class TemplateSpec
       })
       val templateActorTest = system.actorOf(Template.props(userManagerProbe.ref))
 
-      templateActorTest ! RegisterNewLandTemplate(testingLocale, testingName, generateObjectTypeList)
+      templateActorTest ! RegisterNewLandObjectTemplate(testingLocale, testingName, generateObjectTypeList)
       expectMsg(Success())
 
       templateActorTest ! GetObjectTypeOptions(username, testingLocale)
@@ -202,7 +210,7 @@ class TemplateSpec
 
       templateActor ! PoisonPill
       templateActor = system.actorOf(Template.props(userProbe.ref))
-      templateActor ! RegisterNewLandTemplate(testingLocale, testingName, generateObjectTypeList)
+      templateActor ! RegisterNewLandObjectTemplate(testingLocale, testingName, generateObjectTypeList)
       expectMsg(Success())
 
       templateActor ! GetObjectTypeOptions(username, testingLocale)

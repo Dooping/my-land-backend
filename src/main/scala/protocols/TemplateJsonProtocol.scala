@@ -8,6 +8,6 @@ trait TemplateJsonProtocol extends SprayJsonSupport with DefaultJsonProtocol wit
   import actors.Template._
 
   implicit val responseTypeFormat: RootJsonFormat[ObjectTypeOptionsResponse] = jsonFormat2(ObjectTypeOptionsResponse)
-  implicit val registerTypeFormat: RootJsonFormat[RegisterNewLandTemplate] = jsonFormat3(RegisterNewLandTemplate)
-  implicit val changeTypeFormat: RootJsonFormat[ChangeLandTemplate] = jsonFormat3(ChangeLandTemplate)
+  implicit val registerTypeFormat: RootJsonFormat[RegisterNewLandObjectTemplate] = jsonFormat3(RegisterNewLandObjectTemplate)
+  implicit val changeTypeFormat: RootJsonFormat[ChangeLandObjectTemplate] = jsonFormat3(ChangeLandObjectTemplate)
 }

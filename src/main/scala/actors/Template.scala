@@ -16,9 +16,13 @@ object Template {
 
   trait Command
   case class GetObjectTypeOptions(username: String, locale: String) extends Command
-  case class RegisterNewLandTemplate(locale: String, name: String, objTypes: List[ObjType]) extends Command
-  case class ChangeLandTemplate(locale: String, name: String, objTypes: List[ObjType]) extends Command
-  case class DeleteLandTemplate(locale: String, name: String) extends Command
+  case class GetTaskTypeOptions(username: String, locale: String) extends Command
+  case class RegisterNewLandObjectTemplate(locale: String, name: String, objTypes: List[ObjType]) extends Command
+  case class RegisterNewTaskTemplate(locale: String, name: String, taskTypes: List[TaskTypeModel]) extends Command
+  case class ChangeLandObjectTemplate(locale: String, name: String, objTypes: List[ObjType]) extends Command
+  case class ChangeTaskTemplate(locale: String, name: String, taskTypes: List[TaskTypeModel]) extends Command
+  case class DeleteLandObjectTemplate(locale: String, name: String) extends Command
+  case class DeleteTaskTemplate(locale: String, name: String) extends Command
 
   // events
   case class StoredDefaultObjectType(locale: String = "en", name: String, objTypes: List[ObjType])
