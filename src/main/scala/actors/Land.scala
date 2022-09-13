@@ -149,7 +149,7 @@ class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends 
     case LandTaskTypesCommand(id, cmd) =>
       lands.get(id) match {
         case Some(land) =>
-          val taskTypesActor: ActorRef = landObjectTypes.getOrElse(id, {
+          val taskTypesActor: ActorRef = landTaskTypes.getOrElse(id, {
             log.info(s"[$persistenceId] Creating task types actor for land ${land.name}")
             val actor = context.actorOf(TaskType.props(username, id), s"task-type-$username-$id")
             context.watch(actor)

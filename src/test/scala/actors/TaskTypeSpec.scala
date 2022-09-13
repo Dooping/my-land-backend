@@ -78,7 +78,6 @@ class TaskTypeSpec
           assert(name == newTaskType.name)
           assert(description == newTaskType.description)
         case msg =>
-          println(msg)
           fail
       }
     }
