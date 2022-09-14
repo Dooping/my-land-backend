@@ -52,6 +52,7 @@ Or in the parameter `access_token`.
 | [`/land/{landId}/object`](#land-object)     |        |               | Land objects endpoints   |
 | [`/land/{landId}/objectType`](#object-type) |        |               | Object type endpoints    |
 | [`/land/{landId}/taskType`](#task-type)     |        |               | Task type endpoints      |
+| [`/land/{landId}/task`](#task)              |        |               | Task endpoints           |
 
 
 #### Get lands
@@ -121,7 +122,7 @@ Deletes a single land
 
 _Request must have a valid token_
 
-### Land object
+### Land Object
 
 | Path                                                | Method | Parameters    | Description                   |
 |-----------------------------------------------------|--------|---------------|-------------------------------|
@@ -309,14 +310,115 @@ _Request must have a valid token_
 
 Requires an _id_ as a path parameter
 
+### Task
+
+| Path                                     | Method | Parameters                         | Description                |
+|------------------------------------------|--------|------------------------------------|----------------------------|
+| [`/task/{id}`](#get-tasks)               | GET    | (optional) `query=all\season\open` | Gets all user tasks        |
+| [`/land/{landId}/task`](#get-land-tasks) | GET    | (optional) `objectId={id}`         | Gets all land/object tasks |
+| [`/land/{landId}/task`](#create-task)    | POST   |                                    | Creates new task(s)        |
+| [`/task/{id}`](#modify-task)             | PUT    |                                    | Edits a task               |
+| [`/task/{id}/complete`](#complete-task)  | PUT    |                                    | Completes a task           |
+| [`/task/{id}/archive`](#archive-task)    | PUT    |                                    | Archives a task            |
+| [`/task/{id}`](#delete-task)             | DELETE |                                    | Deletes a task             |
+
+#### Get tasks
+
+Fetches user tasks
+
+The default value for the _query_ parameter is `all`.
+
+The possible values for the _query_ parameter are:
+- `all`:  fetches all user tasks, in any state
+- `season`: fetches only tasks that are not archived
+- `open`: fetches only tasks that are neither completed nor archived
+
+_Request must have a valid token_
+
+#### Get land tasks
+
+Fetches all tasks from the land.
+If the parameter _objectId_ is set, only fetches tasks for the specified _object_
+
+_Request must have a valid token_
+
+#### Create task
+
+Creates one or multiple tasks in the given land
+
+_Request must have a valid token_
+
+Requires one of the following payloads
+```json
+{
+  "objectId": 1,
+  "taskTypeId": 2,
+  "priority": 3,
+  "notes": "some notes about the task"
+}
+```
+```json
+[
+  {
+    "objectId": 1,
+    "taskTypeId": 2,
+    "priority": 3,
+    "notes": "some notes about the task"
+  },
+  "..."
+]
+```
+
+#### Modify task
+
+Edits the data of a task
+
+_Request must have a valid token_
+
+Requires an _id_ as a path parameter
+
+Requires a payload with the new task type
+```json
+{
+  "objectId": 1,
+  "taskTypeId": 2,
+  "priority": 3,
+  "notes": "some notes about the task"
+}
+```
+
+#### Complete task
+
+Sets a task as completed
+
+_Request must have a valid token_
+
+Requires an _id_ as a path parameter
+
+#### Archive task
+
+Sets a task as archived
+
+_Request must have a valid token_
+
+Requires an _id_ as a path parameter
+
+#### Delete task
+
+Deletes a task
+
+_Request must have a valid token_
+
+Requires an _id_ as a path parameter
+
 ### Template
 
-| Path                            | Method | Parameters   | Permissions | Description                   |
-|---------------------------------|--------|--------------|-------------|-------------------------------|
-| [`/template`](#get-templates)   | GET    | locale       | User        | Gets all templates for locale |
-| [`/template`](#create-template) | POST   |              | Admin       | Creates a new template        |
-| [`/template`](#modify-template) | PUT    |              | Admin       | Edits an existing template    |
-| [`/template`](#delete-template) | DELETE | locale, name | Admin       | Deletes a template            |
+| Path                            | Method | Parameters       | Permissions | Description                   |
+|---------------------------------|--------|------------------|-------------|-------------------------------|
+| [`/template`](#get-templates)   | GET    | `locale`         | User        | Gets all templates for locale |
+| [`/template`](#create-template) | POST   |                  | Admin       | Creates a new template        |
+| [`/template`](#modify-template) | PUT    |                  | Admin       | Edits an existing template    |
+| [`/template`](#delete-template) | DELETE | `locale`, `name` | Admin       | Deletes a template            |
 
 #### Get Templates
 
