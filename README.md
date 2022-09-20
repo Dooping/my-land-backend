@@ -413,22 +413,22 @@ Requires an _id_ as a path parameter
 
 ### Template
 
-| Path                            | Method | Parameters       | Permissions | Description                   |
-|---------------------------------|--------|------------------|-------------|-------------------------------|
-| [`/template`](#get-templates)   | GET    | `locale`         | User        | Gets all templates for locale |
-| [`/template`](#create-template) | POST   |                  | Admin       | Creates a new template        |
-| [`/template`](#modify-template) | PUT    |                  | Admin       | Edits an existing template    |
-| [`/template`](#delete-template) | DELETE | `locale`, `name` | Admin       | Deletes a template            |
+| Path                                          | Method | Parameters       | Permissions | Description                   |
+|-----------------------------------------------|--------|------------------|-------------|-------------------------------|
+| [`/template/object`](#get-object-templates)   | GET    | `locale`         | User        | Gets all templates for locale |
+| [`/template/object`](#create-object-template) | POST   |                  | Admin       | Creates a new template        |
+| [`/template/object`](#modify-object-template) | PUT    |                  | Admin       | Edits an existing template    |
+| [`/template/object`](#delete-object-template) | DELETE | `locale`, `name` | Admin       | Deletes a template            |
 
-#### Get Templates
+#### Get Object Templates
 
-Fetches all templates for the provided _locale_
+Fetches all object templates for the provided _locale_
 
 _Request must have a valid token_
 
-#### Create Template
+#### Create Object Template
 
-Creates a new template
+Creates a new object template
 
 Requires a payload with the new data
 ```json
@@ -448,9 +448,9 @@ Requires a payload with the new data
 
 **Only admin users can make this request.**
 
-#### Modify Template
+#### Modify Object Template
 
-Edits the data of a template.
+Edits the data of an object template.
 
 Requires a payload with the new data
 ```json
@@ -469,9 +469,9 @@ Requires a payload with the new data
 ```
 **Only admin users can make this request.**
 
-#### Delete Template
+#### Delete Object Template
 
-Deletes a template
+Deletes an object template
 
 Requires both _locale_ and _name_ as a query parameters
 

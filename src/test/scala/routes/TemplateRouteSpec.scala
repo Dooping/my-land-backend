@@ -50,7 +50,7 @@ class TemplateRouteSpec extends AnyWordSpecLike
           sender ! ObjectTypeOptionsResponse(Map("Agriculture" -> landTemplateDefault), Set(landTemplateFromLands))
           TestActor.KeepRunning
       })
-      Get("/template?locale=pt") ~> TemplateRoute.route(testProbe.ref, testAdminAuthPayload) ~> check {
+      Get("/template/object?locale=pt") ~> TemplateRoute.route(testProbe.ref, testAdminAuthPayload) ~> check {
         status shouldBe StatusCodes.OK
         val response = responseAs[ObjectTypeOptionsResponse]
         assert(response.default("Agriculture") == landTemplateDefault)
@@ -68,7 +68,7 @@ class TemplateRouteSpec extends AnyWordSpecLike
           sender ! ObjectTypeOptionsResponse(Map("Agriculture" -> landTemplateDefault), Set(landTemplateFromLands))
           TestActor.KeepRunning
       })
-      Get("/template") ~> TemplateRoute.route(testProbe.ref, testAdminAuthPayload) ~> check {
+      Get("/template/object") ~> TemplateRoute.route(testProbe.ref, testAdminAuthPayload) ~> check {
         status shouldBe StatusCodes.OK
         val response = responseAs[ObjectTypeOptionsResponse]
         assert(response.default("Agriculture") == landTemplateDefault)
@@ -77,7 +77,7 @@ class TemplateRouteSpec extends AnyWordSpecLike
     }
 
     "fail to do admin operation" in {
-      Delete("/template?locale=en&name=Agriculture") ~> handleRejections(RejectionHandlers.authorizationFailedHandler){
+      Delete("/template/object?locale=en&name=Agriculture") ~> handleRejections(RejectionHandlers.authorizationFailedHandler){
         TemplateRoute.route(testProbe.ref, testAuthPayload)} ~> check {
           status shouldBe StatusCodes.Forbidden
         }
@@ -97,14 +97,14 @@ class TemplateRouteSpec extends AnyWordSpecLike
           sender ! Success()
           TestActor.KeepRunning
       })
-      Post("/template", RegisterNewLandObjectTemplate(templateLocale, templateName, defaultTemplate)) ~>
+      Post("/template/object", RegisterNewLandObjectTemplate(templateLocale, templateName, defaultTemplate)) ~>
           TemplateRoute.route(testProbe.ref, testAdminAuthPayload) ~> check {
         status shouldBe StatusCodes.OK
       }
     }
 
     "fail to register a default template if no entity provided" in {
-      Post("/template") ~> handleRejections(RejectionHandlers.authorizationFailedHandler){
+      Post("/template/object") ~> handleRejections(RejectionHandlers.authorizationFailedHandler){
         TemplateRoute.route(testProbe.ref, testAdminAuthPayload)} ~> check {
         status shouldBe StatusCodes.BadRequest
       }
@@ -122,14 +122,14 @@ class TemplateRouteSpec extends AnyWordSpecLike
           sender ! Success()
           TestActor.KeepRunning
       })
-      Put("/template", ChangeLandObjectTemplate(templateLocale, templateName, defaultTemplate)) ~>
+      Put("/template/object", ChangeLandObjectTemplate(templateLocale, templateName, defaultTemplate)) ~>
         TemplateRoute.route(testProbe.ref, testAdminAuthPayload) ~> check {
         status shouldBe StatusCodes.OK
       }
     }
 
     "fail to change a default template if no entity provided" in {
-      Put("/template") ~> handleRejections(RejectionHandlers.authorizationFailedHandler){
+      Put("/template/object") ~> handleRejections(RejectionHandlers.authorizationFailedHandler){
         TemplateRoute.route(testProbe.ref, testAdminAuthPayload)} ~> check {
         status shouldBe StatusCodes.BadRequest
       }
@@ -145,13 +145,13 @@ class TemplateRouteSpec extends AnyWordSpecLike
           sender ! Success()
           TestActor.KeepRunning
       })
-      Delete(s"/template?locale=$templateLocale&name=$templateName") ~> TemplateRoute.route(testProbe.ref, testAdminAuthPayload) ~> check {
+      Delete(s"/template/object?locale=$templateLocale&name=$templateName") ~> TemplateRoute.route(testProbe.ref, testAdminAuthPayload) ~> check {
         status shouldBe StatusCodes.OK
       }
     }
 
     "fail to delete a default template if any parameter is missing" in {
-      Delete("/template") ~> handleRejections(RejectionHandlers.authorizationFailedHandler){
+      Delete("/template/object") ~> handleRejections(RejectionHandlers.authorizationFailedHandler){
         TemplateRoute.route(testProbe.ref, testAdminAuthPayload)} ~> check {
         status shouldBe StatusCodes.BadRequest
       }

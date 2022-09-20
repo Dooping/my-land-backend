@@ -21,7 +21,7 @@ object TemplateRoute extends ObjectTypeJsonProtocol with TemplateJsonProtocol {
   implicit val timeout: Timeout = Timeout(3 seconds)
 
   def route(template: ActorRef, authPayload: Payload): Route = {
-    path("template") {
+    path("template" / "object") {
       (get & parameter(Symbol("locale").as[String].withDefault("en"))) { locale =>
         val templateFuture = (template ? GetObjectTypeOptions(authPayload.username, locale))
           .mapTo[ObjectTypeOptionsResponse]
