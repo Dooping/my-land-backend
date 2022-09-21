@@ -1,7 +1,6 @@
 package routes
 
-import actors.ObjectTypeSpec.generateObjectTypeList
-import actors.TemplateSpec.{localeGen, nameGen}
+
 import akka.actor.ActorRef
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.StatusCodes
@@ -26,9 +25,10 @@ class TemplateRouteSpec extends AnyWordSpecLike
   with TemplateJsonProtocol
   with SprayJsonSupport {
 
-  import actors.Template
   import actors.Template._
-  import actors.UserManagement.LandCommand
+  import actors.ObjectTypeSpec.generateObjectTypeList
+  import actors.TaskTypeSpec.generateTaskTypeList
+  import actors.TemplateSpec.{localeGen, nameGen}
 
   override def afterAll(): Unit = {
     TestKit.shutdownActorSystem(system)
@@ -56,8 +56,25 @@ class TemplateRouteSpec extends AnyWordSpecLike
         assert(response.fromLands.contains(landTemplateFromLands))
       }
     }
+    "get all default and user task templates" in {
+      val landTemplateDefault = generateTaskTypeList
+      val landTemplateFromLands = generateTaskTypeList
+      testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
+        case GetTaskTypeOptions(username, locale) =>
+          assert(username == testAdminAuthPayload.username)
+          assert(locale == "pt")
+          sender ! TaskTypeOptionsResponse(Map("Agriculture" -> landTemplateDefault), Set(landTemplateFromLands))
+          TestActor.KeepRunning
+      })
+      Get("/template/task?locale=pt") ~> TemplateRoute.route(testProbe.ref, testAdminAuthPayload) ~> check {
+        status shouldBe StatusCodes.OK
+        val response = responseAs[TaskTypeOptionsResponse]
+        assert(response.default("Agriculture") == landTemplateDefault)
+        assert(response.fromLands.contains(landTemplateFromLands))
+      }
+    }
 
-    "get results for default locale when no locale provided" in {
+    "get object type results for default locale when no locale provided" in {
       val landTemplateDefault = generateObjectTypeList
       val landTemplateFromLands = generateObjectTypeList
       testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
@@ -75,6 +92,24 @@ class TemplateRouteSpec extends AnyWordSpecLike
       }
     }
 
+    "get task type results for default locale when no locale provided" in {
+      val landTemplateDefault = generateTaskTypeList
+      val landTemplateFromLands = generateTaskTypeList
+      testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
+        case GetTaskTypeOptions(username, locale) =>
+          assert(username == testAdminAuthPayload.username)
+          assert(locale == "en")
+          sender ! TaskTypeOptionsResponse(Map("Agriculture" -> landTemplateDefault), Set(landTemplateFromLands))
+          TestActor.KeepRunning
+      })
+      Get("/template/task") ~> TemplateRoute.route(testProbe.ref, testAdminAuthPayload) ~> check {
+        status shouldBe StatusCodes.OK
+        val response = responseAs[TaskTypeOptionsResponse]
+        assert(response.default("Agriculture") == landTemplateDefault)
+        assert(response.fromLands.contains(landTemplateFromLands))
+      }
+    }
+
     "fail to do admin operation" in {
       Delete("/template/object?locale=en&name=Agriculture") ~> handleRejections(RejectionHandlers.authorizationFailedHandler){
         TemplateRoute.route(testProbe.ref, testAuthPayload)} ~> check {
@@ -84,7 +119,7 @@ class TemplateRouteSpec extends AnyWordSpecLike
   }
 
   "Admin user" should {
-    "register a new default template" in {
+    "register a new default object type template" in {
       val defaultTemplate = generateObjectTypeList
       val templateName = nameGen.sample.get
       val templateLocale = localeGen.sample.get
@@ -102,14 +137,39 @@ class TemplateRouteSpec extends AnyWordSpecLike
       }
     }
 
-    "fail to register a default template if no entity provided" in {
+    "register a new default task type template" in {
+      val defaultTemplate = generateTaskTypeList
+      val templateName = nameGen.sample.get
+      val templateLocale = localeGen.sample.get
+      testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
+        case RegisterNewTaskTemplate(locale, name, objTypes) =>
+          assert(objTypes == defaultTemplate)
+          assert(locale == templateLocale)
+          assert(name == templateName)
+          sender ! Success()
+          TestActor.KeepRunning
+      })
+      Post("/template/task", RegisterNewTaskTemplate(templateLocale, templateName, defaultTemplate)) ~>
+        TemplateRoute.route(testProbe.ref, testAdminAuthPayload) ~> check {
+        status shouldBe StatusCodes.OK
+      }
+    }
+
+    "fail to register a default object type template if no entity provided" in {
       Post("/template/object") ~> handleRejections(RejectionHandlers.authorizationFailedHandler){
         TemplateRoute.route(testProbe.ref, testAdminAuthPayload)} ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
 
-    "change a default template" in {
+    "fail to register a default task type template if no entity provided" in {
+      Post("/template/task") ~> handleRejections(RejectionHandlers.authorizationFailedHandler){
+        TemplateRoute.route(testProbe.ref, testAdminAuthPayload)} ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+    }
+
+    "change a default object type template" in {
       val defaultTemplate = generateObjectTypeList
       val templateName = nameGen.sample.get
       val templateLocale = localeGen.sample.get
@@ -127,14 +187,39 @@ class TemplateRouteSpec extends AnyWordSpecLike
       }
     }
 
-    "fail to change a default template if no entity provided" in {
+    "change a default task type template" in {
+      val defaultTemplate = generateTaskTypeList
+      val templateName = nameGen.sample.get
+      val templateLocale = localeGen.sample.get
+      testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
+        case ChangeTaskTemplate(locale, name, taskTypes) =>
+          assert(taskTypes == defaultTemplate)
+          assert(locale == templateLocale)
+          assert(name == templateName)
+          sender ! Success()
+          TestActor.KeepRunning
+      })
+      Put("/template/task", ChangeTaskTemplate(templateLocale, templateName, defaultTemplate)) ~>
+        TemplateRoute.route(testProbe.ref, testAdminAuthPayload) ~> check {
+        status shouldBe StatusCodes.OK
+      }
+    }
+
+    "fail to change a default object type template if no entity provided" in {
       Put("/template/object") ~> handleRejections(RejectionHandlers.authorizationFailedHandler){
         TemplateRoute.route(testProbe.ref, testAdminAuthPayload)} ~> check {
         status shouldBe StatusCodes.BadRequest
       }
     }
 
-    "delete a default template" in {
+    "fail to change a default task type template if no entity provided" in {
+      Put("/template/task") ~> handleRejections(RejectionHandlers.authorizationFailedHandler){
+        TemplateRoute.route(testProbe.ref, testAdminAuthPayload)} ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+    }
+
+    "delete a default object type template" in {
       val templateName = nameGen.sample.get
       val templateLocale = localeGen.sample.get
       testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
@@ -149,8 +234,30 @@ class TemplateRouteSpec extends AnyWordSpecLike
       }
     }
 
-    "fail to delete a default template if any parameter is missing" in {
+    "delete a default task type template" in {
+      val templateName = nameGen.sample.get
+      val templateLocale = localeGen.sample.get
+      testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
+        case DeleteTaskTemplate(locale, name) =>
+          assert(locale == templateLocale)
+          assert(name == templateName)
+          sender ! Success()
+          TestActor.KeepRunning
+      })
+      Delete(s"/template/task?locale=$templateLocale&name=$templateName") ~> TemplateRoute.route(testProbe.ref, testAdminAuthPayload) ~> check {
+        status shouldBe StatusCodes.OK
+      }
+    }
+
+    "fail to delete a default object type template if any parameter is missing" in {
       Delete("/template/object") ~> handleRejections(RejectionHandlers.authorizationFailedHandler){
+        TemplateRoute.route(testProbe.ref, testAdminAuthPayload)} ~> check {
+        status shouldBe StatusCodes.BadRequest
+      }
+    }
+
+    "fail to delete a default task type template if any parameter is missing" in {
+      Delete("/template/task") ~> handleRejections(RejectionHandlers.authorizationFailedHandler){
         TemplateRoute.route(testProbe.ref, testAdminAuthPayload)} ~> check {
         status shouldBe StatusCodes.BadRequest
       }
