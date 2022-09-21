@@ -2,13 +2,13 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 
 ThisBuild / scalaVersion := "2.13.8"
 
-lazy val akkaVersion = "2.6.19"
-lazy val postgresVersion = "42.3.6"
-val akkaHttpVersion = "10.2.9"
+lazy val akkaVersion = "2.6.20"
+lazy val postgresVersion = "42.5.0"
+val akkaHttpVersion = "10.2.10"
 val scalaTestVersion = "3.2.12"
 lazy val leveldbVersion = "0.12"
 lazy val leveldbjniVersion = "1.8"
-lazy val protobufVersion = "3.21.1"
+lazy val protobufVersion = "3.21.5"
 
 lazy val root = (project in file("."))
   .settings(
