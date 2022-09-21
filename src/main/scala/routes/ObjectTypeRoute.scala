@@ -1,6 +1,7 @@
 package routes
 
 import akka.actor.ActorRef
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.{ContentTypes, HttpEntity, HttpResponse, StatusCodes}
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.Route
@@ -14,7 +15,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.concurrent.ExecutionContext.Implicits.global
 
-object ObjectTypeRoute extends ObjectTypeJsonProtocol {
+object ObjectTypeRoute extends ObjectTypeJsonProtocol with SprayJsonSupport {
   import actors.ObjectType._
   import actors.Land.LandObjectTypesCommand
   import actors.UserManagement.LandCommand

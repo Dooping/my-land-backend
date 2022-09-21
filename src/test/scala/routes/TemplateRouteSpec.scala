@@ -1,11 +1,10 @@
 package routes
 
-import actors.ObjectType.ObjType
-import actors.ObjectTypeSpec.{generateObjectTypeList, generateObjectTypeListEntity}
+import actors.ObjectTypeSpec.generateObjectTypeList
 import actors.TemplateSpec.{localeGen, nameGen}
-import actors.UserManagement
-import akka.actor.{Actor, ActorRef, Props}
-import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
+import akka.actor.ActorRef
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
+import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.Directives.handleRejections
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.pattern.StatusReply._
@@ -17,7 +16,6 @@ import protocols.{ObjectTypeJsonProtocol, TemplateJsonProtocol}
 import utils.JwtHelper.Payload
 import utils.RejectionHandlers
 
-import java.util.Date
 import scala.language.postfixOps
 
 class TemplateRouteSpec extends AnyWordSpecLike
@@ -25,7 +23,8 @@ class TemplateRouteSpec extends AnyWordSpecLike
   with BeforeAndAfterAll
   with ScalatestRouteTest
   with ObjectTypeJsonProtocol
-  with TemplateJsonProtocol {
+  with TemplateJsonProtocol
+  with SprayJsonSupport {
 
   import actors.Template
   import actors.Template._

@@ -1,11 +1,10 @@
 package protocols
 
-import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import spray.json.{DefaultJsonProtocol, RootJsonFormat}
 import protocols.DateMarshalling._
 
 
-trait ObjectTypeJsonProtocol extends SprayJsonSupport with DefaultJsonProtocol {
+trait ObjectTypeJsonProtocol extends DefaultJsonProtocol {
   import actors.ObjectType._
 
   implicit val objectTypeFormat: RootJsonFormat[ObjectTypeEntity] = jsonFormat6(ObjectTypeEntity)

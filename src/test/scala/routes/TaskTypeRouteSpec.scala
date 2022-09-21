@@ -2,6 +2,7 @@ package routes
 
 import actors.UserManagement
 import akka.actor.{Actor, ActorRef, Props}
+import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.{ContentTypes, StatusCodes}
 import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.pattern.StatusReply._
@@ -19,7 +20,8 @@ class TaskTypeRouteSpec extends AnyWordSpecLike
   with Matchers
   with BeforeAndAfterAll
   with ScalatestRouteTest
-  with TaskTypeJsonProtocol {
+  with TaskTypeJsonProtocol
+  with SprayJsonSupport {
 
   import actors.Land
   import actors.Land.LandTaskTypesCommand
