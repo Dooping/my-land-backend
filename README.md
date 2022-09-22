@@ -413,12 +413,16 @@ Requires an _id_ as a path parameter
 
 ### Template
 
-| Path                                          | Method | Parameters       | Permissions | Description                   |
-|-----------------------------------------------|--------|------------------|-------------|-------------------------------|
-| [`/template/object`](#get-object-templates)   | GET    | `locale`         | User        | Gets all templates for locale |
-| [`/template/object`](#create-object-template) | POST   |                  | Admin       | Creates a new template        |
-| [`/template/object`](#modify-object-template) | PUT    |                  | Admin       | Edits an existing template    |
-| [`/template/object`](#delete-object-template) | DELETE | `locale`, `name` | Admin       | Deletes a template            |
+| Path                                          | Method | Parameters       | Permissions | Description                          |
+|-----------------------------------------------|--------|------------------|-------------|--------------------------------------|
+| [`/template/object`](#get-object-templates)   | GET    | `locale`         | User        | Gets all object templates for locale |
+| [`/template/object`](#create-object-template) | POST   |                  | Admin       | Creates a new object template        |
+| [`/template/object`](#modify-object-template) | PUT    |                  | Admin       | Edits an existing object template    |
+| [`/template/object`](#delete-object-template) | DELETE | `locale`, `name` | Admin       | Deletes an object template           |
+| [`/template/task`](#get-task-templates)       | GET    | `locale`         | User        | Gets all task templates for locale   |
+| [`/template/task`](#create-task-template)     | POST   |                  | Admin       | Creates a new task template          |
+| [`/template/task`](#modify-task-template)     | PUT    |                  | Admin       | Edits an existing task template      |
+| [`/template/task`](#delete-task-template)     | DELETE | `locale`, `name` | Admin       | Deletes a task template              |
 
 #### Get Object Templates
 
@@ -472,6 +476,61 @@ Requires a payload with the new data
 #### Delete Object Template
 
 Deletes an object template
+
+Requires both _locale_ and _name_ as a query parameters
+
+**Only admin users can make this request.**
+
+#### Get Task Templates
+
+Fetches all task templates for the provided _locale_
+
+_Request must have a valid token_
+
+#### Create Task Template
+
+Creates a new task template
+
+Requires a payload with the new data
+```json
+{
+  "locale": "en",
+  "name": "some name",
+  "taskTypes": [
+    {
+      "name": "example",
+      "description": "some description"
+    },
+    "..."
+  ]
+}
+```
+
+**Only admin users can make this request.**
+
+#### Modify Task Template
+
+Edits the data of a task template.
+
+Requires a payload with the new data
+```json
+{
+  "locale": "en",
+  "name": "some name",
+  "taskTypes": [
+    {
+      "name": "example",
+      "description": "some description"
+    },
+    "..."
+  ]
+}
+```
+**Only admin users can make this request.**
+
+#### Delete Task Template
+
+Deletes a task template
 
 Requires both _locale_ and _name_ as a query parameters
 
