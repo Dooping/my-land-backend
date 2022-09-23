@@ -41,6 +41,19 @@ Or in the parameter `access_token`.
 
 ### Land
 
+**Entity:**
+
+| Field       | Type   | Description                                      |
+|-------------|--------|--------------------------------------------------|
+| id          | number | identifier                                       |
+| name        | string | name of the land                                 |
+| description | string | description or state of the land                 |
+| area        | number | calculation of the area value                    |
+| lat         | number | latitude of the visualization point              |
+| lon         | number | longitude of the visualization point             |
+| zoom        | number | zoom of the camera in the visualization point    |
+| bearing     | number | bearing of the camera in the visualization point |
+
 | Path                                        | Method | Parameters    | Description              |
 |---------------------------------------------|--------|---------------|--------------------------|
 | [`/land`](#get-lands)                       | GET    |               | Gets all lands from user |
@@ -124,6 +137,15 @@ _Request must have a valid token_
 
 ### Land Object
 
+**Entity:**
+
+| Field   | Type   | Description                                   |
+|---------|--------|-----------------------------------------------|
+| id      | number | identifier                                    |
+| element | string | GeoJSON string describing the element         |
+| status  | string | description of state of the object            |
+| typeId  | number | identifier of the [object type](#object-type) |
+
 | Path                                                | Method | Parameters    | Description                   |
 |-----------------------------------------------------|--------|---------------|-------------------------------|
 | [`/land/{landId}/object`](#get-land-objects)        | GET    |               | Gets all objects from land    |
@@ -184,6 +206,17 @@ _Request must have a valid token_
 Requires a _type_ as a query parameter
 
 ### Object type
+
+**Entity:**
+
+| Field      | Type   | Description                         |
+|------------|--------|-------------------------------------|
+| id         | number | identifier                          |
+| name       | string | name of the object type             |
+| color      | string | hex color of the object             |
+| icon       | string | icon representing the object type   |
+| createdAt  | Date   | timestamp of the type's creation    |
+| modifiedAt | Date   | timestamp of the type's last change |
 
 | Path                                                    | Method | Description                |
 |---------------------------------------------------------|--------|----------------------------|
@@ -250,6 +283,14 @@ Requires an _id_ as a path parameter
 
 ### Task Type
 
+**Entity:**
+
+| Field       | Type   | Description             |
+|-------------|--------|-------------------------|
+| id          | number | identifier              |
+| name        | string | name of the task type   |
+| description | string | description of the task |
+
 | Path                                                | Method | Description                   |
 |-----------------------------------------------------|--------|-------------------------------|
 | [`/land/{landId}/taskType`](#get-task-types)        | GET    | Gets all task types from land |
@@ -311,6 +352,21 @@ _Request must have a valid token_
 Requires an _id_ as a path parameter
 
 ### Task
+
+**Entity:**
+
+| Field       | Type      | Description                    |
+|-------------|-----------|--------------------------------|
+| id          | number    | identifier                     |
+| landId      | number    | identifier of the land         |
+| objectId    | number    | identifier of the object       |
+| taskTypeId  | number    | identifier of the task type    |
+| priority    | number    | priority of the task (1 to 5)  |
+| notes       | string    | any notes about the task       |
+| createdAt   | Date      | timestamp with creation time   |
+| modifiedAt  | Date      | timestamp with change time     |
+| completedAt | Date/null | timestamp with completion time |
+| archivedAt  | Date/null | timestamp with archiving time  |
 
 | Path                                     | Method | Parameters                         | Description                |
 |------------------------------------------|--------|------------------------------------|----------------------------|
@@ -412,6 +468,20 @@ _Request must have a valid token_
 Requires an _id_ as a path parameter
 
 ### Template
+
+**Object template entity**
+
+| Field     | Type                                          | Description                      |
+|-----------|-----------------------------------------------|----------------------------------|
+| default   | Map[string, List[[ObjectType](#object-type)]] | default object templates         |
+| fromLands | List[List[[ObjectType](#object-type)]]        | object templates in use by lands |
+
+**Task template entity**
+
+| Field     | Type                                      | Description                    |
+|-----------|-------------------------------------------|--------------------------------|
+| default   | Map[string, List[[TaskType](#task-type)]] | default task templates         |
+| fromLands | List[List[[TaskType](#task-type)]]        | task templates in use by lands |
 
 | Path                                          | Method | Parameters       | Permissions | Description                          |
 |-----------------------------------------------|--------|------------------|-------------|--------------------------------------|
