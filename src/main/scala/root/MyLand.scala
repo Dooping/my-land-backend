@@ -24,7 +24,8 @@ object MyLand extends App {
         authenticateOAuth2("MyLand", jwtAuthenticator) { payload =>
           LandRoute.route(userManagerActor, payload.username) ~
           TemplateRoute.route(templateActor, payload) ~
-          TaskManagerRoute.route(userManagerActor, payload.username)
+          TaskManagerRoute.route(userManagerActor, payload.username) ~
+          UserManagementRoute.deletionRoute(userManagerActor, payload.username)
         }
       }
     }

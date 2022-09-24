@@ -1,6 +1,6 @@
 package routes
 
-import actors.UserManagement.{GetPassword, Register}
+import actors.UserManagement.{DeletedUser, GetPassword, Register}
 import akka.actor.ActorRef
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.http.scaladsl.model.{HttpEntity, HttpResponse, StatusCodes}
@@ -66,7 +66,18 @@ object UserManagementRoute extends UserManagementJsonProtocol with SprayJsonSupp
         }
         complete(registrationFuture)
       }
+    }
+  }
 
+  def deletionRoute(authenticator: ActorRef, username: String): Route = {
+    (path("user" / "delete") & post) {
+      val deletionFuture = (authenticator ? DeletedUser(username)).map {
+        case Error(reason) =>
+          HttpResponse(StatusCodes.BadRequest, entity = HttpEntity(reason.getMessage))
+        case Success(_) =>
+          HttpResponse(StatusCodes.OK)
+      }
+      complete(deletionFuture)
     }
   }
 }

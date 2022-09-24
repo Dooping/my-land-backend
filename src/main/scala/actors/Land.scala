@@ -131,6 +131,7 @@ class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends 
     case Destroy =>
       lands.keys.foreach(self ! DeleteLand(_))
       self ! Implode
+      sender ! Success()
 
     case ReceiveTimeout =>
       log.info(s"[$persistenceId] Actor idle, stopping...")
