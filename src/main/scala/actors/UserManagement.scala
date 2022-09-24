@@ -11,8 +11,10 @@ object UserManagement {
   case class Register(username: String, password: String) extends Command
   case class LandCommand(username: String, cmd: Land.Command) extends Command
   case class TaskCommand(username: String, cmd: TaskManager.Command) extends Command
+  case class DeleteUser(username: String) extends Command
 
   case class StoredPassword(username: String, password: String)
+  case class DeletedUser(username: String)
 }
 class UserManagement extends PersistentActor with ActorLogging {
   import UserManagement._
@@ -67,12 +69,27 @@ class UserManagement extends PersistentActor with ActorLogging {
       userLands = userLands.filterNot(_._2 == actorRef)
       log.info(s"[$persistenceId] $actorRef was removed from active actors")
 
+    case DeleteUser(username) =>
+      persist(DeletedUser(username)) { event =>
+        users -= username
+        userLands
+          .get(username)
+          .orElse(Some(context.actorOf(Land.props(username), s"land-$username")))
+          .foreach(_ ! Land.Destroy)
+        userTasks
+          .get(username)
+          .orElse(Some(context.actorOf(TaskManager.props(username), s"task-$username")))
+          .foreach(_ ! TaskManager.Destroy)
+      }
+
     case _ => log.warning("should not be here")
   }
 
   override def receiveRecover: Receive = {
     case StoredPassword(username, password) =>
-      log.info(s"Recovered user $username with pw $password")
       users += username -> password
+
+    case DeletedUser(username) =>
+      users -= username
   }
 }

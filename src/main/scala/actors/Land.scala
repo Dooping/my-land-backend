@@ -20,6 +20,8 @@ object Land {
   case class LandObjectTypesCommand(landId: Int, cmd: ObjectType.Command) extends Command
   case class LandTaskTypesCommand(landId: Int, cmd: TaskType.Command) extends Command
   case class LandObjectsCommand(landId: Int, cmd: ObjectManager.Command) extends Command
+  case object Destroy extends Command
+  case object Implode extends Command
 
   trait Event
   case class LandEntity(id: Int, name: String, description: String, area: Double, lat: Double, lon: Double, zoom: Double, bearing: Double, polygon: String) extends Event
@@ -126,10 +128,18 @@ class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends 
           sender ! Error("The land requested does not exist")
       }
 
+    case Destroy =>
+      lands.keys.foreach(self ! DeleteLand(_))
+      self ! Implode
 
     case ReceiveTimeout =>
       log.info(s"[$persistenceId] Actor idle, stopping...")
       context.stop(self)
+
+    case Implode =>
+      deleteMessages(lastSequenceNr)
+      context.stop(self)
+
 
     case LandObjectTypesCommand(id, cmd) =>
       lands.get(id) match {

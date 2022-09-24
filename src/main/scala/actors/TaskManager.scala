@@ -1,6 +1,5 @@
 package actors
 
-import actors.TaskType.Destroy
 import akka.actor.{ActorLogging, Props, ReceiveTimeout}
 import akka.pattern.StatusReply.{Error, Success}
 import akka.persistence.PersistentActor
@@ -32,6 +31,7 @@ object TaskManager {
   case class ArchiveTask(id: Int) extends Command
   case class CompleteTask(id: Int) extends Command
   case class DeleteTask(id: Int) extends Command
+  case object Destroy extends Command
 
   // Events
   case class TaskEntity(
