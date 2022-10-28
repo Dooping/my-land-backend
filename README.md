@@ -8,10 +8,11 @@ Server side of My Land App
 
 ### User
 
-| Path                 | Method | Description          |
-|----------------------|--------|----------------------|
-| [`/user`](#register) | POST   | Registers a new user |
-| [`/user` ](#login)   | GET    | Logs the user in     |
+| Path                     | Method | Description          |
+|--------------------------|--------|----------------------|
+| [`/user`](#register)     | POST   | Registers a new user |
+| [`/user` ](#login)       | GET    | Logs the user in     |
+| [`/user` ](#user-delete) | DELETE | Deletes a user       |
 
 #### Register
 `POST /user`
@@ -33,6 +34,13 @@ Endpoint to log in the user through basic authentication.
 
 Returns a JWT token in the header `Access-Token`.
 The token is valid for 30 days.
+
+#### User Delete
+`DELETE /user`
+
+Endpoint to delete the current user.
+
+_Request must have a valid token_
 
 ### Authorization
 All requests (besides login and register) must send a valid JWT token to the server.
