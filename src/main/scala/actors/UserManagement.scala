@@ -70,6 +70,7 @@ class UserManagement extends PersistentActor with ActorLogging {
       log.info(s"[$persistenceId] $actorRef was removed from active actors")
 
     case DeleteUser(username) =>
+      log.info(s"[$persistenceId] Deleting user $username")
       persist(DeletedUser(username)) { event =>
         users -= username
         userLands
@@ -80,6 +81,7 @@ class UserManagement extends PersistentActor with ActorLogging {
           .get(username)
           .orElse(Some(context.actorOf(TaskManager.props(username), s"task-$username")))
           .foreach(_ ! TaskManager.Destroy)
+        sender ! Success()
       }
 
     case _ => log.warning("should not be here")

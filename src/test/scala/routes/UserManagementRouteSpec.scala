@@ -67,4 +67,20 @@ class UserManagementRouteSpec extends AnyWordSpecLike
     }
   }
 
+  "A deletion route" should {
+
+    "delete a user when it exists" in {
+      val userManagement = TestProbe("userManagement")
+      userManagement.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
+        case DeleteUser(_) =>
+          sender ! Success()
+          TestActor.KeepRunning
+      })
+
+      Delete("/user") ~> UserManagementRoute.deletionRoute(userManagement.ref, "username") ~> check {
+        status shouldBe StatusCodes.OK
+      }
+    }
+  }
+
 }
