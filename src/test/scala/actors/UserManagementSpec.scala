@@ -46,6 +46,17 @@ class UserManagementSpec
         case Success(_: String) =>
       }
     }
+
+    "fail to delete a non existing user" in {
+      userManagementActor ! DeleteUser("someRandomUser")
+      expectMsg(Error("User someRandomUser does not exist"))
+    }
+
+    "delete an existing user" in {
+      userManagementActor ! DeleteUser("david")
+      expectMsg(Success())
+
+    }
   }
 
 }
