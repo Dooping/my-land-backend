@@ -11,6 +11,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 import protocols.LandJsonProtocol
 
+import java.util.Date
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -135,7 +136,7 @@ class LandRouteSpec extends AnyWordSpecLike
       val testLandId = 1
       testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
         case ChangePolygon(id, area, lat, lon, zoom, bearing, polygon) =>
-          sender ! Success(LandEntity(id, "land name", "should not matter", area, lat, lon, zoom, bearing, polygon))
+          sender ! Success(LandEntity(id, "land name", "should not matter", area, lat, lon, zoom, bearing, polygon, new Date, new Date))
           TestActor.KeepRunning
       })
       Patch("/land", ChangePolygon(testLandId, 1L, 2L, 3L, 4L, 5L, "changedPolygon")) ~> LandRoute.route(userManagement, testUsername) ~> check {
@@ -143,7 +144,7 @@ class LandRouteSpec extends AnyWordSpecLike
         status shouldBe StatusCodes.OK
         land.id shouldBe testLandId
         land should matchPattern {
-          case LandEntity(`testLandId`, _, _, 1L, 2L, 3L, 4L, 5L, "changedPolygon") =>
+          case LandEntity(`testLandId`, _, _, 1L, 2L, 3L, 4L, 5L, "changedPolygon", _, _) =>
         }
       }
     }

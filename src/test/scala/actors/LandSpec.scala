@@ -1,5 +1,6 @@
 package actors
 
+import actors.ObjectTypeSpec.dateGen
 import akka.actor.{Actor, ActorRef, ActorSystem, Kill, PoisonPill, Props}
 import akka.pattern.StatusReply
 import akka.pattern.StatusReply._
@@ -38,7 +39,9 @@ object LandSpec {
     val landEntityGen = for {
       id <- id.map(Gen.const).getOrElse(Gen.choose(1, 1000))
       land <- landGen(None)
-    } yield LandEntity tupled id +: land
+      createdAt <- dateGen
+      modifiedAt <- dateGen
+    } yield LandEntity tupled id +: land :+ createdAt :+ modifiedAt
     landEntityGen.sample.get
   }
 }
@@ -168,7 +171,7 @@ class LandSpec
       landTestActor ! GetLand(1)
 
       expectMsgPF() {
-        case Some(LandEntity(1, land.name, land.description, changePolygon.area, changePolygon.lat, changePolygon.lon, changePolygon.zoom, changePolygon.bearing, changePolygon.polygon)) =>
+        case Some(LandEntity(1, land.name, land.description, changePolygon.area, changePolygon.lat, changePolygon.lon, changePolygon.zoom, changePolygon.bearing, changePolygon.polygon, _, _)) =>
       }
     }
 

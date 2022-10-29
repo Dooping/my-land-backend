@@ -61,6 +61,8 @@ Or in the parameter `access_token`.
 | lon         | number | longitude of the visualization point             |
 | zoom        | number | zoom of the camera in the visualization point    |
 | bearing     | number | bearing of the camera in the visualization point |
+| createdAt   | Date   | timestamp of the type's creation                 |
+| modifiedAt  | Date   | timestamp of the type's last change              |
 
 | Path                                        | Method | Parameters    | Description              |
 |---------------------------------------------|--------|---------------|--------------------------|

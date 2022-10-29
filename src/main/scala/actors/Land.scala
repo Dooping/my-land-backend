@@ -4,6 +4,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props, ReceiveTime
 import akka.pattern.StatusReply._
 import akka.persistence.{PersistentActor, RecoveryCompleted}
 
+import java.util.Date
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -11,20 +12,58 @@ object Land {
   def props(username: String): Props = Props(new Land(username))
 
   sealed trait Command
+
   case class GetLand(id: Int) extends Command
+
   case object GetAllLands extends Command
+
   case class AddLand(name: String, description: String, area: Double, lat: Double, lon: Double, zoom: Double, bearing: Double, polygon: String) extends Command
+
   case class ChangeLandDescription(id: Int, description: String) extends Command
+
   case class ChangePolygon(id: Int, area: Double, lat: Double, lon: Double, zoom: Double, bearing: Double, polygon: String) extends Command
+
   case class DeleteLand(id: Int) extends Command
+
   case class LandObjectTypesCommand(landId: Int, cmd: ObjectType.Command) extends Command
+
   case class LandTaskTypesCommand(landId: Int, cmd: TaskType.Command) extends Command
+
   case class LandObjectsCommand(landId: Int, cmd: ObjectManager.Command) extends Command
+
   case object Destroy extends Command
+
   case object Implode extends Command
 
   trait Event
-  case class LandEntity(id: Int, name: String, description: String, area: Double, lat: Double, lon: Double, zoom: Double, bearing: Double, polygon: String) extends Event
+
+  case class LandEntity(
+                         id: Int,
+                         name: String,
+                         description: String,
+                         area: Double,
+                         lat: Double,
+                         lon: Double,
+                         zoom: Double,
+                         bearing: Double,
+                         polygon: String,
+                         createdAt: Date,
+                         modifiedAt: Date) extends Event {
+    override def equals(obj: Any): Boolean = {
+      val other = obj.asInstanceOf[LandEntity]
+      obj.isInstanceOf[LandEntity] &&
+        id == other.id &&
+        name == other.name &&
+        description == other.description &&
+        area == other.area &&
+        lat == other.lat &&
+        lon == other.lon &&
+        zoom == other.zoom &&
+        bearing == other.bearing &&
+        polygon == other.polygon
+    }
+  }
+
   case class DeletedLand(id: Int) extends Event
 }
 
@@ -43,7 +82,7 @@ class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends 
   override def receiveRecover: Receive = landRecovery
 
   def landRecovery: Receive = {
-    case land @ LandEntity(id, _, _, _, _, _, _, _, _) =>
+    case land@LandEntity(id, _, _, _, _, _, _, _, _, _, _) =>
       log.info(s"[$persistenceId] Restoring land: $land")
       recoveredLands += id -> land
       recoveredId += 1
@@ -51,17 +90,17 @@ class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends 
   }
 
   def landReceive(
-       lands: Map[Int, LandEntity],
-       currentId: Int,
-       landObjectTypes: Map[Int, ActorRef],
-       landTaskTypes: Map[Int, ActorRef],
-       landObjects: Map[Int, ActorRef]): Receive = {
+                   lands: Map[Int, LandEntity],
+                   currentId: Int,
+                   landObjectTypes: Map[Int, ActorRef],
+                   landTaskTypes: Map[Int, ActorRef],
+                   landObjects: Map[Int, ActorRef]): Receive = {
     case GetAllLands =>
       sender ! lands.values.toList
 
     case GetLand(name) => sender ! lands.get(name)
 
-    case land @ AddLand(name, description, area, lat, lon, zoom, bearing, polygon) =>
+    case land@AddLand(name, description, area, lat, lon, zoom, bearing, polygon) =>
       if (lands.exists {
         case (_, land) => land.name == name
       }) {
@@ -69,7 +108,7 @@ class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends 
         sender ! Error(s"Land $name already exists")
       } else {
         log.info(s"[$persistenceId] Adding land $land")
-        persist(LandEntity(currentId, name, description, area, lat, lon, zoom, bearing, polygon)) { land =>
+        persist(LandEntity(currentId, name, description, area, lat, lon, zoom, bearing, polygon, new Date, new Date)) { land =>
           context.become(landReceive(lands + (land.id -> land), currentId + 1, landObjectTypes, landTaskTypes, landObjects))
           sender ! Success(land)
         }
@@ -79,7 +118,7 @@ class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends 
       lands.get(id) match {
         case Some(land) =>
           log.info(s"[$persistenceId] Changing $id description to: $description")
-          val newLand = land.copy(description = description)
+          val newLand = land.copy(description = description, modifiedAt = new Date)
           persist(newLand) { land =>
             context.become(landReceive(lands + (land.id -> land), currentId, landObjectTypes, landTaskTypes, landObjects))
             sender ! Success(land)
@@ -89,11 +128,11 @@ class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends 
           sender ! Error("The land requested does not exist")
       }
 
-    case cmd @ ChangePolygon(id, area, lat, lon, zoom, bearing, polygon) =>
+    case cmd@ChangePolygon(id, area, lat, lon, zoom, bearing, polygon) =>
       lands.get(id) match {
         case Some(land) =>
           log.info(s"[$persistenceId] Changing $id polygon to: $cmd")
-          val newLand = LandEntity(id, land.name, land.description, area, lat, lon, zoom, bearing, polygon)
+          val newLand = LandEntity(id, land.name, land.description, area, lat, lon, zoom, bearing, polygon, land.createdAt, new Date)
           persist(newLand) { land =>
             context.become(landReceive(lands + (land.id -> land), currentId, landObjectTypes, landTaskTypes, landObjects))
             sender ! Success(land)
@@ -129,6 +168,7 @@ class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends 
       }
 
     case Destroy =>
+      log.info(s"[$persistenceId] Destroying all lands...")
       lands.keys.foreach(self ! DeleteLand(_))
       self ! Implode
       sender ! Success()
@@ -138,6 +178,7 @@ class Land(username: String, receiveTimeoutDuration: Duration = 1 hour) extends 
       context.stop(self)
 
     case Implode =>
+      log.info(s"[$persistenceId] Destroying land manager...")
       deleteMessages(lastSequenceNr)
       context.stop(self)
 
