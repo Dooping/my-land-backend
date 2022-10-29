@@ -4,6 +4,7 @@ import akka.actor.{ActorLogging, Props, ReceiveTimeout}
 import akka.pattern.StatusReply.{Error, Success, success}
 import akka.persistence.PersistentActor
 
+import java.util.Date
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -21,7 +22,12 @@ object TaskType {
   case object Destroy extends Command
 
   // Events
-  case class TaskTypeEntity(id: Int, name: String, description: String)
+  case class TaskTypeEntity(
+                             id: Int,
+                             name: String,
+                             description: String,
+                             createdAt: Date,
+                             modifiedAt: Date)
   case class Deleted(id: Int)
 
 }
@@ -45,7 +51,8 @@ class TaskType(username: String, landId: Int, receiveTimeoutDuration: Duration =
   override def receiveCommand: Receive = {
     case AddTaskType(taskType) =>
       log.info(s"Adding task type $taskType")
-      val entity = TaskTypeEntity(currentId, taskType.name, taskType.description)
+      val now = new Date
+      val entity = TaskTypeEntity(currentId, taskType.name, taskType.description, now, now)
       persist(entity) { event =>
         taskTypes += event.id -> event
         currentId += 1
@@ -54,9 +61,10 @@ class TaskType(username: String, landId: Int, receiveTimeoutDuration: Duration =
 
     case BatchAddTaskType(taskTypes) =>
       log.info(s"Adding batch $taskTypes")
+      val now = new Date
       val taskTypeEntities = taskTypes
         .zip(LazyList.from(currentId))
-        .map { case (model, id) => TaskTypeEntity(id, model.name, model.description)}
+        .map { case (model, id) => TaskTypeEntity(id, model.name, model.description, now, now)}
       var completed = 0
       persistAll(taskTypeEntities) { event =>
         this.taskTypes += event.id -> event
@@ -72,10 +80,10 @@ class TaskType(username: String, landId: Int, receiveTimeoutDuration: Duration =
 
     case ChangeTaskType(id, taskType) =>
       taskTypes.get(id) match {
-        case Some(_) =>
+        case Some(oldTask) =>
           log.info(s"[$persistenceId] Changing task type $id")
-          persist(TaskTypeEntity(id, taskType.name, taskType.description)) { event =>
-            taskTypes += id -> TaskTypeEntity(id, taskType.name, taskType.description)
+          persist(TaskTypeEntity(id, taskType.name, taskType.description, oldTask.createdAt, new Date)) { event =>
+            taskTypes += id -> event
             sender ! Success(event)
           }
         case None =>

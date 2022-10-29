@@ -63,7 +63,7 @@ class TaskTypeRouteSpec extends AnyWordSpecLike
       val randomTaskType = genTaskTypeModel
       testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
         case AddTaskType(taskType) =>
-          sender ! Success(TaskTypeEntity tupled 1 +: TaskTypeModel.unapply(taskType).get)
+          sender ! Success(TaskTypeEntity tupled 1 +: TaskTypeModel.unapply(taskType).get :+ new Date :+ new Date)
           TestActor.KeepRunning
       })
       Post("/taskType", randomTaskType) ~> TaskTypeRoute.route(userManagement, testUsername, testLandId) ~> check {
@@ -79,7 +79,8 @@ class TaskTypeRouteSpec extends AnyWordSpecLike
       testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
         case BatchAddTaskType(tasks) =>
           val zippedList = tasks.zip(LazyList.from(1))
-          val result = zippedList.map { case (task, id) => TaskTypeEntity(id, task.name, task.description) }
+          val now = new Date
+          val result = zippedList.map { case (task, id) => TaskTypeEntity(id, task.name, task.description, now, now) }
           sender ! Success(result)
           TestActor.KeepRunning
       })
@@ -92,7 +93,7 @@ class TaskTypeRouteSpec extends AnyWordSpecLike
 
     "get all previously registered lands" in {
       val zippedList = generateTaskTypeList.zip(LazyList.from(1))
-      val listToReturn = zippedList.map { case (task, id) => TaskTypeEntity(id, task.name, task.description) }
+      val listToReturn = zippedList.map { case (task, id) => TaskTypeEntity(id, task.name, task.description, new Date, new Date) }
       testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
         case GetTaskTypes =>
           sender ! listToReturn
@@ -112,7 +113,7 @@ class TaskTypeRouteSpec extends AnyWordSpecLike
       val taskTypeId = 1
       testProbe.setAutoPilot((sender: ActorRef, msg: Any) => msg match {
         case ChangeTaskType(id, task) =>
-          sender ! Success(TaskTypeEntity(id, task.name, task.description))
+          sender ! Success(TaskTypeEntity(id, task.name, task.description, new Date, new Date))
           TestActor.KeepRunning
       })
       Put(s"/taskType/$taskTypeId", payload) ~> TaskTypeRoute.route(userManagement, testUsername, testLandId) ~> check {

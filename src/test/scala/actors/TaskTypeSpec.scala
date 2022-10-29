@@ -60,7 +60,7 @@ class TaskTypeSpec
       val addTaskType = genAddTaskType
       taskTypeActor ! addTaskType
       expectMsgPF() {
-        case Success(TaskTypeEntity(_, name, description)) =>
+        case Success(TaskTypeEntity(_, name, description, _, _)) =>
           assert(name == addTaskType.taskType.name)
           assert(description == addTaskType.taskType.description)
       }
@@ -74,7 +74,7 @@ class TaskTypeSpec
       taskTypeActor ! ChangeTaskType(1, newTaskType)
 
       expectMsgPF() {
-        case Success(TaskTypeEntity(_, name, description)) =>
+        case Success(TaskTypeEntity(_, name, description, _, _)) =>
           assert(name == newTaskType.name)
           assert(description == newTaskType.description)
         case msg =>

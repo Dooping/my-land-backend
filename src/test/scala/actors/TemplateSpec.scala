@@ -18,6 +18,7 @@ import org.scalacheck.Gen._
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import java.util.Date
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
@@ -295,7 +296,7 @@ class TemplateSpec
           sender ! List(generateRandomLandEntity(Some(1)), generateRandomLandEntity(Some(2)), generateRandomLandEntity(Some(3)))
           TestActor.KeepRunning
         case LandCommand(_, LandTaskTypesCommand(id, GetTaskTypes)) if id > 1 =>
-          sender ! generateTaskTypeList.map(t => TaskTypeEntity(1, t.name, t.description))
+          sender ! generateTaskTypeList.map(t => TaskTypeEntity(1, t.name, t.description, new Date, new Date))
           TestActor.KeepRunning
         case _ => TestActor.KeepRunning
       })
